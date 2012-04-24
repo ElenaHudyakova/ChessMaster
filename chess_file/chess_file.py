@@ -1,4 +1,6 @@
-from chess_game.game import Game
+import re
+from chess_game.game import Game, WHITE, BLACK
+from chess_game.move import Move
 
 class ChessFile(object):
     """A Class-wrapper for PGN file which allows iterating through chess games in that file"""
@@ -13,32 +15,44 @@ class ChessFile(object):
         return self
 
     def _parse_tag(self, line, game):
-        tag_name = ""
-        i = 1
-        while line[i] != " ":
-            tag_name += line[i]
-            i += 1
-        tag_value = ""
-        i += 2
-        while line[i] != "\"":
-            tag_value += line[i]
-            i += 1
+        line = line.lstrip()
+        line = line[1:-1]
+        tag_name, tag_value = line.split(" ", 1)
+        tag_value = tag_value[1:-1]
         game.tags[tag_name] = tag_value
 
 
     def _parse_moves(self, line, game):
-        pass
+        line = line.strip()
+        move_number = 0
+        for move_pair in re.split("\d+\.", line):
+            if move_pair!="":
+                move_pair = move_pair.strip()
+                for move_str in re.split("\s+", move_pair):
+                    move = Move()
+                    move.algebraic_notation = move_str
+                    if move_number % 2 == 0:
+                        move.color = WHITE
+                    else:
+                        move.color = BLACK
+                    move.move_number = move_number/2 + 1
+                    game.moves.append(move)
+                    move_number += 1
+        game.moves.pop()
 
-    def _parseLine(self, line, game):
-        if line[0] == "[":
-            self._parse_tag(line, game)
-        else:
-            self._parse_moves(line, game)
+    def _parseGame(self, notation_str, game):
+        notation_str = notation_str.replace("\n", " ")
+        while "]" in notation_str:
+            tag_line = notation_str.split("]", 1)[0] + "]"
+            notation_str = notation_str.split("]", 1)[1]
+            self._parse_tag(tag_line, game)
+        self._parse_moves(notation_str, game)
 
     def next(self):
         game = Game()
+        notation_str = ""
         if self.startTagLine:
-            self._parseLine(self.startTagLine, game)
+            notation_str += self.startTagLine
         line = self.file.readline()
         if self.eof or line == "":
             raise StopIteration
@@ -47,11 +61,12 @@ class ChessFile(object):
                 self.eof = True
                 break
             else:
-                if (self.startTag in line) and (game.tags.has_key(self.startTag)):
+                if (self.startTag in line) and (self.startTag in notation_str):
                     self.startTagLine = line
                     break
                 else:
-                    self._parseLine(line, game)
+                    notation_str += line
             line = self.file.readline()
+        self._parseGame(notation_str, game)
         return game
 

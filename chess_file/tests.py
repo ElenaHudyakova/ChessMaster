@@ -1,6 +1,7 @@
 import unittest
 import os
 from chess_file.chess_file import  ChessFile
+from chess_game.game import WHITE
 
 class ChessFileTests(unittest.TestCase):
 
@@ -71,12 +72,32 @@ class ChessFileTests(unittest.TestCase):
             "ECO": "C51"
             })
 
-    def test_shallow_move_parsing(self):
+    def test_shallow_moves_parsing(self):
         filename = os.path.join(self.path, "test_files/one_game.pgn")
         self.create_file(filename, self.getGameHeader() + "\n" + self.getGameBody())
         test_file = ChessFile(filename)
         game = test_file.next()
         self.assertEqual(45, len(game.moves))
+
+    def test_mid_moves_parsing(self):
+        filename = os.path.join(self.path, "test_files/one_game.pgn")
+        self.create_file(filename, self.getGameHeader() + "\n" + self.getGameBody())
+        test_file = ChessFile(filename)
+        game = test_file.next()
+        self.assertEqual(23, game.moves[44].move_number)
+        self.assertEqual(WHITE, game.moves[44].color)
+        self.assertEqual("Bxc2", game.moves[44].algebraic_notation)
+
+    def test_deep_moves_parsingBxc2(self):
+        filename = os.path.join(self.path, "test_files/one_game.pgn")
+        self.create_file(filename, self.getGameHeader() + "\n" + self.getGameBody())
+        test_file = ChessFile(filename)
+        game = test_file.next()
+        self.assertEqual(BISHOP, game.moves[44].piece)#Bxc2
+        self.assertEqual(True, game.moves[44].is_capture)
+        self.assertEqual(point(3, 2), game.moves[44].to)
+
+
 
 if __name__ == '__main__':
     unittest.main()
