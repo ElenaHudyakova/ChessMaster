@@ -1,4 +1,5 @@
 import re
+from moves_parse import parse_move
 from chess_game.game import Game, WHITE, BLACK
 from chess_game.move import Move
 
@@ -39,6 +40,9 @@ class ChessFile(object):
                     game.moves.append(move)
                     move_number += 1
         game.moves.pop()
+        for move in game.moves:
+            parse_move(move)
+
 
     def _parseGame(self, notation_str, game):
         notation_str = notation_str.replace("\n", " ")

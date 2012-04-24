@@ -1,7 +1,8 @@
 import unittest
 import os
 from chess_file.chess_file import  ChessFile
-from chess_game.game import WHITE
+from chess_game.board import Point
+from chess_game.game import *
 
 class ChessFileTests(unittest.TestCase):
 
@@ -88,14 +89,61 @@ class ChessFileTests(unittest.TestCase):
         self.assertEqual(WHITE, game.moves[44].color)
         self.assertEqual("Bxc2", game.moves[44].algebraic_notation)
 
-    def test_deep_moves_parsingBxc2(self):
+    def test_deep_moves_parsing_Bxc2(self):
         filename = os.path.join(self.path, "test_files/one_game.pgn")
         self.create_file(filename, self.getGameHeader() + "\n" + self.getGameBody())
         test_file = ChessFile(filename)
         game = test_file.next()
         self.assertEqual(BISHOP, game.moves[44].piece)#Bxc2
+        self.assertEqual(Point("c", 2), game.moves[44].to_point)
+        self.assertEqual(Point(), game.moves[44].from_point)
         self.assertEqual(True, game.moves[44].is_capture)
-        self.assertEqual(point(3, 2), game.moves[44].to)
+
+    def test_deep_moves_parsing_exd5(self):
+        filename = os.path.join(self.path, "test_files/one_game.pgn")
+        self.create_file(filename, self.getGameHeader() + "\n" + self.getGameBody())
+        test_file = ChessFile(filename)
+        game = test_file.next()
+        self.assertEqual(PAWN, game.moves[37].piece)#exd5
+        self.assertEqual(Point("d", 5), game.moves[37].to_point)
+        self.assertEqual(Point("e", None), game.moves[37].from_point)
+        self.assertEqual(True, game.moves[37].is_capture)
+
+    def test_deep_moves_parsing_e4(self):
+        filename = os.path.join(self.path, "test_files/one_game.pgn")
+        self.create_file(filename, self.getGameHeader() + "\n" + self.getGameBody())
+        test_file = ChessFile(filename)
+        game = test_file.next()
+        self.assertEqual(PAWN, game.moves[0].piece)#e4
+        self.assertEqual(Point("e", 4), game.moves[0].to_point)
+        self.assertEqual(Point(), game.moves[0].from_point)
+        self.assertEqual(False, game.moves[0].is_capture)
+
+    def test_deep_moves_parsing_Rad1(self):
+        filename = os.path.join(self.path, "test_files/one_game.pgn")
+        self.create_file(filename, self.getGameHeader() + "\n" + self.getGameBody())
+        test_file = ChessFile(filename)
+        game = test_file.next()
+        self.assertEqual(ROOK, game.moves[28].piece)#Rad1
+        self.assertEqual(Point("d", 1), game.moves[28].to_point)
+        self.assertEqual(Point("a", None), game.moves[28].from_point)
+        self.assertEqual(False, game.moves[28].is_capture)
+
+    def test_deep_moves_parsing_O_O(self):
+        filename = os.path.join(self.path, "test_files/one_game.pgn")
+        self.create_file(filename, self.getGameHeader() + "\n" + self.getGameBody())
+        test_file = ChessFile(filename)
+        game = test_file.next()
+        self.assertEqual(True, game.moves[10].is_king_castling)
+        self.assertEqual(None, game.moves[10].piece)#O-O
+
+    def test_deep_moves_parsing_Bh7_check(self):
+        filename = os.path.join(self.path, "test_files/one_game.pgn")
+        self.create_file(filename, self.getGameHeader() + "\n" + self.getGameBody())
+        test_file = ChessFile(filename)
+        game = test_file.next()
+        self.assertEqual(True, game.moves[32].is_check)
+
 
 
 
