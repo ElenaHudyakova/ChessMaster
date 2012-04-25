@@ -113,7 +113,9 @@ class ChessFileTests(unittest.TestCase):
 
 
     def test_game_simulation_e4(self):
-        self.assertEqual(True, False)
+        self.assertEqual(PAWN, self.game.board_positions[0][("e", 2)].type)
+        self.assertEqual(PAWN, self.game.board_positions[1][("e", 4)].type)
+        self.assertEqual(None, self.game.board_positions[1][("e", 2)])
 
 
 if __name__ == '__main__':

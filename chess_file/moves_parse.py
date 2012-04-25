@@ -2,15 +2,19 @@ import re
 from chess_game.game import *
 from chess_game.board import Point
 
-def parse_move(move):
+def _parse_castling_move(move):
     if move.algebraic_notation == "O-O":
         move.is_king_castling = True
-        move.is_queen_castling = False
+        return True
     else:
         if move.algebraic_notation == "O-O-O":
-            move.is_king_castling = False
             move.is_queen_castling = True
-        else:
+            return True
+    return False
+
+def parse_move(move):
+    is_castling = _parse_castling_move(move)
+    if not is_castling:
             try:
                 m = re.match(r"(?P<piece>[BRKQN]?)(?P<from_file>[a-h]?)(?P<from_rank>[1-8]?)(?P<is_capture>x?)(?P<to_file>[a-h])(?P<to_rank>[1-8])(?P<is_check>\+?)", move.algebraic_notation)
                 move.piece = {
@@ -35,4 +39,4 @@ def parse_move(move):
                 else:
                     move.is_check = False
             except :
-                raise Exception("Panic! Not implemented exception " + move.algebraic_notation)
+                raise Exception("Invalid move record " + move.algebraic_notation + " in file")

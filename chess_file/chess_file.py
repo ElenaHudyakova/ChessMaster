@@ -72,5 +72,6 @@ class ChessFile(object):
                     notation_str += line
             line = self.file.readline()
         self._parseGame(notation_str, game)
+        game.simulate()
         return game
 
