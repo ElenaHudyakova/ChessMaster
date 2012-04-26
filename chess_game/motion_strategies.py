@@ -1,19 +1,17 @@
+import copy
 import math
-from chess_exceptions.chess_exceptions import *
 from chess_game.game import *
 
 
 class MotionStrategy(object):
-    def move(self, board_position, from_point, to_point):
-    # if move is impossible exception raised
-        raise InvalidMoveException("no implementation")
+    def is_move_possible(self, board_position, from_point, to_point):
+        pass
 
-    def capture(self, board_position, from_point, to_point):
-    # if capture is impossible exception raised
-        raise InvalidCaptureException("no implementation")
+    def is_capture_possible(self, board_position, from_point, to_point):
+        pass
 
 class KingMotionStrategy(MotionStrategy):
-    def _can_move(self, game_point, from_point, to_point):
+    def _can_move(self, from_point, to_point):
         if (math.fabs(from_point.file-to_point.file) <= 1) \
                 and (math.fabs(from_point.rank-to_point.rank) <= 1):
             return True
@@ -22,7 +20,7 @@ class KingMotionStrategy(MotionStrategy):
 
     def is_move_possible(self, board_position, from_point, to_point):
         if board_position[to_point.file][to_point.rank] is None \
-                and  self._can_move(board_position, from_point, to_point):
+                and  self._can_move(from_point, to_point):
             return True
         else:
             return False
@@ -30,7 +28,7 @@ class KingMotionStrategy(MotionStrategy):
     def is_capture_possible(self, board_position, from_point, to_point):
         if not (board_position[to_point.file][to_point.rank] is None) \
                     and board_position[to_point.file][to_point.rank].color != board_position[from_point.file][from_point.rank].color \
-                    and self._can_move(board_position, from_point, to_point):
+                    and self._can_move(from_point, to_point):
             return True
         else:
             return False
@@ -43,13 +41,12 @@ class PawnMotionStrategy(MotionStrategy):
         else:
             return False
 
-    def _can_move(self, board_position, from_point, to_point):
-        if board_position.active_color == WHITE:
+    def _can_move(self, color, from_point, to_point):
+        if color == WHITE:
             direction = 1
         else:
             direction = -1
-
-        if self._is_first_move(board_position.active_color, from_point):
+        if self._is_first_move(color, from_point):
             if to_point.file == from_point.file and (to_point.rank == from_point.rank + direction or to_point.rank == from_point.rank + direction*2):
                 return True
             else:
@@ -60,12 +57,43 @@ class PawnMotionStrategy(MotionStrategy):
             else:
                 return False
 
-    def _can_capture(self, game_point, from_point, to_point):
-        pass
+    def _can_capture(self, board_position, from_point, to_point):
+        if board_position.active_color == WHITE:
+            direction = 1
+        else:
+            direction = -1
+        if math.fabs(from_point.file-to_point.file) == 1 and from_point.rank + direction == to_point.rank:
+            return True
+        else:
+            return False
+
 
     def is_move_possible(self, board_position, from_point, to_point):
         if board_position[(to_point.file,to_point.rank)] is None\
-                and  self._can_move(board_position, from_point, to_point):
+                and  self._can_move(board_position.active_color, from_point, to_point):
+            return True
+        else:
+            return False
+
+    def is_capture_possible(self, board_position, from_point, to_point):
+        if not (board_position[(to_point.file, to_point.rank)] is None)\
+           and board_position[(to_point.file, to_point.rank)].color != board_position[(from_point.file, from_point.rank)].color\
+        and self._can_capture(board_position, from_point, to_point):
+            return True
+        else:
+            return False
+
+class KnightMotionStrategy(MotionStrategy):
+    def _can_move(self, from_point, to_point):
+        if (math.fabs(from_point.file-to_point.file) == 2 and math.fabs(from_point.rank-to_point.rank) == 1)\
+                or (math.fabs(from_point.file-to_point.file) == 1 and math.fabs(from_point.rank-to_point.rank) == 2):
+            return True
+        else:
+            return False
+
+    def is_move_possible(self, board_position, from_point, to_point):
+        if board_position[(to_point.file,to_point.rank)] is None\
+        and  self._can_move(from_point, to_point):
             return True
         else:
             return False
@@ -73,8 +101,52 @@ class PawnMotionStrategy(MotionStrategy):
     def is_capture_possible(self, board_position, from_point, to_point):
         if not (board_position[to_point.file][to_point.rank] is None)\
            and board_position[to_point.file][to_point.rank].color != board_position[from_point.file][from_point.rank].color\
-        and self._can_capture(board_position, from_point, to_point):
+        and self._can_move(from_point, to_point):
             return True
         else:
             return False
 
+class BishopMotionStrategy(MotionStrategy):
+    def _is_path_clear(self, board_position, from_point, to_point):
+        if from_point.file<to_point.file:
+            file_direction = 1
+        else:
+            file_direction = -1
+
+        if from_point.rank<to_point.rank:
+            rank_direction = 1
+        else:
+            rank_direction = -1
+
+        #current_point = Point(from_point.file+file_direction, from_point.rank+rank_direction)
+        current_point = copy.copy(from_point)
+        current_point.file += file_direction
+        current_point.rank += rank_direction
+        while current_point!=to_point:
+            if not (board_position[(current_point.file, current_point.rank)] is None):
+                return False
+            current_point.file += file_direction
+            current_point.rank += rank_direction
+        return True
+
+    def _can_move(self, board_position, from_point, to_point):
+        if math.fabs(from_point.file-to_point.file) == math.fabs(from_point.rank-to_point.rank) \
+                and (self._is_path_clear(board_position, from_point, to_point)):
+            return True
+        else:
+            return False
+
+    def is_move_possible(self, board_position, from_point, to_point):
+        if board_position[(to_point.file,to_point.rank)] is None\
+            and  self._can_move(board_position, from_point, to_point):
+            return True
+        else:
+            return False
+
+    def is_capture_possible(self, board_position, from_point, to_point):
+        if not (board_position[(to_point.file, to_point.rank)] is None)\
+           and board_position[(to_point.file, to_point.rank)].color != board_position[(from_point.file,from_point.rank)].color\
+        and self._can_move(board_position, from_point, to_point):
+            return True
+        else:
+            return False

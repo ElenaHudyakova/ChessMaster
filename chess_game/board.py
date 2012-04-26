@@ -30,6 +30,9 @@ class Point(object):
         else:
             return 1
 
+    def __str__(self):
+        return "(" + str(self.file) + ", " + str(self.rank) + ")"
+
 class BoardPosition(object):
     def __init__(self):
         self.active_color = None
@@ -81,27 +84,70 @@ class BoardPosition(object):
 
     def find_suitable_pieces(self, move):
         suitable_pieces = list()
-        #print "move color ", move.color, " piece type ", move.piece_type
         for piece in self._pieces:
             if (piece.type == move.piece_type) and (piece.color == move.color):
                 if move.is_capture:
                     if piece.motion_strategy.is_capture_possible(self, piece.point, move.to_point):
                         suitable_pieces.append(copy.copy(piece))
                 else:
+                    #print "!"
                     if piece.motion_strategy.is_move_possible(self, piece.point, move.to_point):
                         suitable_pieces.append(copy.copy(piece))
         return suitable_pieces
 
+    def _set_regular_move(self, previous_board_position, move):
+        pieces = previous_board_position.find_suitable_pieces(move)
+
+        print str(len(pieces)) + " pieces were found suitable for move " + move.algebraic_notation
+
+        #if len(pieces) != 1:
+        #    raise Exception(str(len(pieces)) + " pieces were found suitable for move " + move.algebraic_notation)
+
+        for piece in self._pieces:
+            if move.is_capture and piece.point == move.to_point:
+                self._pieces.remove(piece)
+            if piece.point == pieces[0].point:
+                piece.point = move.to_point
+
+    def _set_king_castling(self):
+        if self.active_color == WHITE:
+            rank = 1
+        else:
+            rank = 8
+        if self[("f", rank)] is None and self[("g", rank)] is None\
+                and self[("e", rank)].type == KING and self[("h", rank)].type == ROOK:
+            self[("e", rank)].point = Point("g",rank)
+            self[("h", rank)].point = Point("f", rank)
+        else:
+            raise Exception("Invalid king caslting")
+
+
+    def _set_queen_castling(self):
+        if self.active_color == WHITE:
+            rank = 1
+        else:
+            rank = 8
+        if self[("b", rank)] is None and self[("c", rank)] is None and self[("d", rank)] is None\
+           and self[("e", rank)].type == KING and self[("a", rank)].type == ROOK:
+            self[("e", rank)].point = Point("c",rank)
+            self[("a", rank)].point = Point("d", rank)
+        else:
+            raise Exception("Invalid queen caslting")
+
 
     def get_next_board_position(self, move):
         new_board_position = copy.deepcopy(self)
-        pieces = self.find_suitable_pieces(move)
-        print str(len(pieces)) + " pieces were found suitable for move " + move.algebraic_notation
-        #if len(pieces) != 1:
-        #    raise Exception(str(len(pieces)) + " pieces were found suitable for move " + move.algebraic_notation)
-        for piece in new_board_position._pieces:
-            if piece.point == pieces[0].point:
-                piece.point = move.to_point
+
+        if move.is_king_castling:
+            print "king castling"
+            new_board_position._set_king_castling()
+        else:
+            if move.is_queen_castling:
+                print "queen castling"
+                new_board_position._set_queen_castling()
+            else:
+                new_board_position._set_regular_move(self, move)
+
         if self.active_color == WHITE:
             new_board_position.active_color = BLACK
         else:

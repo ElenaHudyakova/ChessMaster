@@ -122,5 +122,50 @@ class ChessFileTests(unittest.TestCase):
         self.assertEqual(PAWN, self.game.board_positions[2][("e", 5)].type)
         self.assertEqual(None, self.game.board_positions[2][("e", 7)])
 
+    def test_game_simulation_Nf3(self):
+        self.assertEqual(KNIGHT, self.game.board_positions[2][("g", 1)].type)
+        self.assertEqual(KNIGHT, self.game.board_positions[3][("f", 3)].type)
+        self.assertEqual(None, self.game.board_positions[3][("g", 1)])
+
+    def test_game_simulation_Nc6(self):
+        self.assertEqual(KNIGHT, self.game.board_positions[3][("b", 8)].type)
+        self.assertEqual(KNIGHT, self.game.board_positions[4][("c", 6)].type)
+        self.assertEqual(None, self.game.board_positions[4][("b", 8)])
+
+    def test_game_simulation_Bc4(self):
+        self.assertEqual(BISHOP, self.game.board_positions[4][("f", 1)].type)
+        self.assertEqual(BISHOP, self.game.board_positions[5][("c", 4)].type)
+        self.assertEqual(None, self.game.board_positions[5][("f", 1)])
+
+    def test_game_simulation_Bc5(self):
+        self.assertEqual(BISHOP, self.game.board_positions[5][("f", 8)].type)
+        self.assertEqual(BISHOP, self.game.board_positions[6][("c", 5)].type)
+        self.assertEqual(None, self.game.board_positions[6][("f", 8)])
+
+    def test_game_simulation_Bxb4(self):
+        self.assertEqual(BISHOP, self.game.board_positions[7][("c", 5)].type)
+        self.assertNotEqual(None, self.game.board_positions[7][("b", 4)])
+        self.assertEqual(BISHOP, self.game.board_positions[8][("b", 4)].type)
+        self.assertEqual(None, self.game.board_positions[8][("c", 5)])
+
+    def test_game_simulation_O_O(self):
+        self.assertEqual(KING, self.game.board_positions[10][("e", 1)].type)
+        self.assertEqual(ROOK, self.game.board_positions[10][("h", 1)].type)
+        self.assertEqual(KING, self.game.board_positions[11][("g", 1)].type)
+        self.assertEqual(ROOK, self.game.board_positions[11][("f", 1)].type)
+        self.assertEqual(None, self.game.board_positions[11][("e", 1)])
+        self.assertEqual(None, self.game.board_positions[11][("h", 1)])
+
+    def test_game_simulation_d6(self):
+        self.assertEqual(PAWN, self.game.board_positions[11][("d", 7)].type)
+        self.assertEqual(PAWN, self.game.board_positions[12][("d", 6)].type)
+        self.assertEqual(None, self.game.board_positions[12][("d", 7)])
+
+    def test_game_simulation_exd4(self):
+        self.assertEqual(PAWN, self.game.board_positions[13][("e", 5)].type)
+        self.assertNotEqual(None, self.game.board_positions[13][("d", 4)])
+        self.assertEqual(PAWN, self.game.board_positions[14][("d", 4)].type)
+        self.assertEqual(None, self.game.board_positions[14][("e", 5)])
+
 if __name__ == '__main__':
     unittest.main()
