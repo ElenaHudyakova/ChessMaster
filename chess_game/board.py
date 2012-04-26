@@ -1,3 +1,4 @@
+import copy
 from chess_game.game import *
 from chess_game.piece_factory import create_piece
 
@@ -35,9 +36,9 @@ class BoardPosition(object):
         self.en_passant_point = None
         self._pieces = list()
 
+
     def add_piece(self, piece):
         self._pieces.append(piece)
-
 
     def __getitem__(self, key):
         try:
@@ -74,20 +75,35 @@ class BoardPosition(object):
         board.add_piece(create_piece(KNIGHT, Point("g", 8), BLACK))
         board.add_piece(create_piece(ROOK, Point("h", 8), BLACK))
 
+        board.active_color = WHITE
+
         return board
 
     def find_suitable_pieces(self, move):
+        suitable_pieces = list()
+        #print "move color ", move.color, " piece type ", move.piece_type
         for piece in self._pieces:
             if (piece.type == move.piece_type) and (piece.color == move.color):
                 if move.is_capture:
-                    pass
+                    if piece.motion_strategy.is_capture_possible(self, piece.point, move.to_point):
+                        suitable_pieces.append(copy.copy(piece))
                 else:
-                    pass
+                    if piece.motion_strategy.is_move_possible(self, piece.point, move.to_point):
+                        suitable_pieces.append(copy.copy(piece))
+        return suitable_pieces
 
 
     def get_next_board_position(self, move):
-        new_board_position = BoardPosition()
+        new_board_position = copy.deepcopy(self)
         pieces = self.find_suitable_pieces(move)
-        if len(pieces) != 1:
-            raise Exception(len(pieces) + " pieces were found suitable for move " + move.algebraic_notation)
+        print str(len(pieces)) + " pieces were found suitable for move " + move.algebraic_notation
+        #if len(pieces) != 1:
+        #    raise Exception(str(len(pieces)) + " pieces were found suitable for move " + move.algebraic_notation)
+        for piece in new_board_position._pieces:
+            if piece.point == pieces[0].point:
+                piece.point = move.to_point
+        if self.active_color == WHITE:
+            new_board_position.active_color = BLACK
+        else:
+            new_board_position.active_color = WHITE
         return new_board_position

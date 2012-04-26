@@ -1,5 +1,6 @@
 import math
 from chess_exceptions.chess_exceptions import *
+from chess_game.game import *
 
 
 class MotionStrategy(object):
@@ -36,20 +37,34 @@ class KingMotionStrategy(MotionStrategy):
 
 class PawnMotionStrategy(MotionStrategy):
 
-    def _is_first_move(self, from_point):
-        if from_point.rank == 2:
+    def _is_first_move(self, color, from_point):
+        if (from_point.rank == 2 and color == WHITE) or (from_point.rank == 7 and color == BLACK):
             return True
         else:
             return False
 
-    def _can_move(self, game_point, from_point, to_point):
-        pass
+    def _can_move(self, board_position, from_point, to_point):
+        if board_position.active_color == WHITE:
+            direction = 1
+        else:
+            direction = -1
+
+        if self._is_first_move(board_position.active_color, from_point):
+            if to_point.file == from_point.file and (to_point.rank == from_point.rank + direction or to_point.rank == from_point.rank + direction*2):
+                return True
+            else:
+                return False
+        else:
+            if to_point.file == from_point.file and to_point.rank == from_point.rank + direction:
+                return True
+            else:
+                return False
 
     def _can_capture(self, game_point, from_point, to_point):
         pass
 
     def is_move_possible(self, board_position, from_point, to_point):
-        if board_position[to_point.file][to_point.rank] is None\
+        if board_position[(to_point.file,to_point.rank)] is None\
                 and  self._can_move(board_position, from_point, to_point):
             return True
         else:

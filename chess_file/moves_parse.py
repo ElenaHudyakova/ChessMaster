@@ -17,7 +17,7 @@ def parse_move(move):
     if not is_castling:
             try:
                 m = re.match(r"(?P<piece>[BRKQN]?)(?P<from_file>[a-h]?)(?P<from_rank>[1-8]?)(?P<is_capture>x?)(?P<to_file>[a-h])(?P<to_rank>[1-8])(?P<is_check>\+?)", move.algebraic_notation)
-                move.piece = {
+                move.piece_type = {
                     'B': lambda: BISHOP,
                     'R': lambda: ROOK,
                     'K': lambda: KING,

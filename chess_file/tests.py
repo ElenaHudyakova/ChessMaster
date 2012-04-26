@@ -81,32 +81,32 @@ class ChessFileTests(unittest.TestCase):
         self.assertEqual("Bxc2", self.game.moves[44].algebraic_notation)
 
     def test_deep_moves_parsing_Bxc2(self):
-        self.assertEqual(BISHOP, self.game.moves[44].piece)#Bxc2
+        self.assertEqual(BISHOP, self.game.moves[44].piece_type)#Bxc2
         self.assertEqual(Point("c", 2), self.game.moves[44].to_point)
         self.assertEqual(Point(), self.game.moves[44].from_point)
         self.assertEqual(True, self.game.moves[44].is_capture)
 
     def test_deep_moves_parsing_exd5(self):
-        self.assertEqual(PAWN, self.game.moves[37].piece)#exd5
+        self.assertEqual(PAWN, self.game.moves[37].piece_type)#exd5
         self.assertEqual(Point("d", 5), self.game.moves[37].to_point)
         self.assertEqual(Point("e", None), self.game.moves[37].from_point)
         self.assertEqual(True, self.game.moves[37].is_capture)
 
     def test_deep_moves_parsing_e4(self):
-        self.assertEqual(PAWN, self.game.moves[0].piece)#e4
+        self.assertEqual(PAWN, self.game.moves[0].piece_type)#e4
         self.assertEqual(Point("e", 4), self.game.moves[0].to_point)
         self.assertEqual(Point(), self.game.moves[0].from_point)
         self.assertEqual(False, self.game.moves[0].is_capture)
 
     def test_deep_moves_parsing_Rad1(self):
-        self.assertEqual(ROOK, self.game.moves[28].piece)#Rad1
+        self.assertEqual(ROOK, self.game.moves[28].piece_type)#Rad1
         self.assertEqual(Point("d", 1), self.game.moves[28].to_point)
         self.assertEqual(Point("a", None), self.game.moves[28].from_point)
         self.assertEqual(False, self.game.moves[28].is_capture)
 
     def test_deep_moves_parsing_O_O(self):
         self.assertEqual(True, self.game.moves[10].is_king_castling)
-        self.assertEqual(None, self.game.moves[10].piece)#O-O
+        self.assertEqual(None, self.game.moves[10].piece_type)#O-O
 
     def test_deep_moves_parsing_Bh7_check(self):
         self.assertEqual(True, self.game.moves[32].is_check)
@@ -117,6 +117,10 @@ class ChessFileTests(unittest.TestCase):
         self.assertEqual(PAWN, self.game.board_positions[1][("e", 4)].type)
         self.assertEqual(None, self.game.board_positions[1][("e", 2)])
 
+    def test_game_simulation_e5(self):
+        self.assertEqual(PAWN, self.game.board_positions[1][("e", 7)].type)
+        self.assertEqual(PAWN, self.game.board_positions[2][("e", 5)].type)
+        self.assertEqual(None, self.game.board_positions[2][("e", 7)])
 
 if __name__ == '__main__':
     unittest.main()

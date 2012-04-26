@@ -44,7 +44,7 @@ class ChessFile(object):
             parse_move(move)
 
 
-    def _parseGame(self, notation_str, game):
+    def _parse_game(self, notation_str, game):
         notation_str = notation_str.replace("\n", " ")
         while "]" in notation_str:
             tag_line = notation_str.split("]", 1)[0] + "]"
@@ -71,7 +71,7 @@ class ChessFile(object):
                 else:
                     notation_str += line
             line = self.file.readline()
-        self._parseGame(notation_str, game)
+        self._parse_game(notation_str, game)
         game.simulate()
         return game
 
