@@ -86,13 +86,15 @@ class BoardPosition(object):
         suitable_pieces = list()
         for piece in self._pieces:
             if (piece.type == move.piece_type) and (piece.color == move.color):
-                if move.is_capture:
-                    if piece.motion_strategy.is_capture_possible(self, piece.point, move.to_point):
-                        suitable_pieces.append(copy.copy(piece))
-                else:
-                    #print "!"
-                    if piece.motion_strategy.is_move_possible(self, piece.point, move.to_point):
-                        suitable_pieces.append(copy.copy(piece))
+                if move.from_point:
+
+                        if move.is_capture:
+                            if piece.motion_strategy.is_capture_possible(self, piece.point, move.to_point):
+                                suitable_pieces.append(copy.copy(piece))
+                        else:
+                            #print "!"
+                            if piece.motion_strategy.is_move_possible(self, piece.point, move.to_point):
+                                suitable_pieces.append(copy.copy(piece))
         return suitable_pieces
 
     def _set_regular_move(self, previous_board_position, move):

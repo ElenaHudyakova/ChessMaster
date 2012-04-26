@@ -9,11 +9,11 @@ def create_piece(type, point, color):
     if type == KNIGHT:
         motion_strategy = chess_game.motion_strategies.KnightMotionStrategy()
     if type == ROOK:
-        motion_strategy = chess_game.motion_strategies.PawnMotionStrategy()
+        motion_strategy = chess_game.motion_strategies.RookMotionStrategy()
     if type == BISHOP:
         motion_strategy = chess_game.motion_strategies.BishopMotionStrategy()
     if type == QUEEN:
-        motion_strategy = chess_game.motion_strategies.PawnMotionStrategy()
+        motion_strategy = chess_game.motion_strategies.QueenMotionStrategy()
     piece = Piece(motion_strategy, point, color)
     piece.type = type
     return piece

@@ -19,5 +19,5 @@ class Game(object):
     def simulate(self):
         self.board_positions.append(BoardPosition.get_initial_board_position())
         #for i in range(len(self.moves)):
-        for i in range(0,15):
+        for i in range(0,29):
             self.board_positions.append(self.board_positions[i].get_next_board_position(self.moves[i]))

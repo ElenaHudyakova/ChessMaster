@@ -167,5 +167,15 @@ class ChessFileTests(unittest.TestCase):
         self.assertEqual(PAWN, self.game.board_positions[14][("d", 4)].type)
         self.assertEqual(None, self.game.board_positions[14][("e", 5)])
 
+    def test_game_simulation_Qc2(self):
+        self.assertEqual(QUEEN, self.game.board_positions[24][("d", 1)].type)
+        self.assertEqual(QUEEN, self.game.board_positions[25][("c", 2)].type)
+        self.assertEqual(None, self.game.board_positions[25][("d", 1)])
+
+    def test_game_simulation_Rad1(self):
+        self.assertEqual(ROOK, self.game.board_positions[28][("a", 1)].type)
+        self.assertEqual(ROOK, self.game.board_positions[29][("d", 1)].type)
+        self.assertEqual(None, self.game.board_positions[29][("a", 1)])
+
 if __name__ == '__main__':
     unittest.main()
