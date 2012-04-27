@@ -19,15 +19,15 @@ class KingMotionStrategy(MotionStrategy):
             return False
 
     def is_move_possible(self, board_position, from_point, to_point):
-        if board_position[to_point.file][to_point.rank] is None \
+        if board_position[(to_point.file, to_point.rank)] is None \
                 and  self._can_move(from_point, to_point):
             return True
         else:
             return False
 
     def is_capture_possible(self, board_position, from_point, to_point):
-        if not (board_position[to_point.file][to_point.rank] is None) \
-                    and board_position[to_point.file][to_point.rank].color != board_position[from_point.file][from_point.rank].color \
+        if not (board_position[(to_point.file, to_point.rank)] is None) \
+                    and board_position[(to_point.file, to_point.rank)].color != board_position[(from_point.file, from_point.rank)].color \
                     and self._can_move(from_point, to_point):
             return True
         else:
@@ -99,8 +99,8 @@ class KnightMotionStrategy(MotionStrategy):
             return False
 
     def is_capture_possible(self, board_position, from_point, to_point):
-        if not (board_position[to_point.file][to_point.rank] is None)\
-           and board_position[to_point.file][to_point.rank].color != board_position[from_point.file][from_point.rank].color\
+        if not (board_position[(to_point.file, to_point.rank)] is None)\
+           and board_position[(to_point.file, to_point.rank)].color != board_position[(from_point.file, from_point.rank)].color\
         and self._can_move(from_point, to_point):
             return True
         else:
@@ -166,7 +166,6 @@ class RookMotionStrategy(MotionStrategy):
             else:
                 rank_direction = -1
 
-        #current_point = Point(from_point.file+file_direction, from_point.rank+rank_direction)
         current_point = copy.copy(from_point)
         current_point.file += file_direction
         current_point.rank += rank_direction
@@ -179,7 +178,7 @@ class RookMotionStrategy(MotionStrategy):
         return True
 
     def _can_move(self, board_position, from_point, to_point):
-        if from_point.file == to_point.file or from_point.rank == to_point.rank and (self._is_path_clear(board_position, from_point, to_point)):
+        if (from_point.file == to_point.file or from_point.rank == to_point.rank) and (self._is_path_clear(board_position, from_point, to_point)):
             return True
         else:
             return False

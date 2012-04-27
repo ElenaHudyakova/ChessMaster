@@ -82,27 +82,32 @@ class BoardPosition(object):
 
         return board
 
+
+
     def find_suitable_pieces(self, move):
         suitable_pieces = list()
         for piece in self._pieces:
             if (piece.type == move.piece_type) and (piece.color == move.color):
-                if move.from_point:
-                        if move.is_capture:
-                            if piece.motion_strategy.is_capture_possible(self, piece.point, move.to_point):
-                                suitable_pieces.append(copy.copy(piece))
-                        else:
-                            #print "!"
-                            if piece.motion_strategy.is_move_possible(self, piece.point, move.to_point):
-                                suitable_pieces.append(copy.copy(piece))
+
+                if (move.from_point.rank and move.from_point.rank != piece.point.rank) or (move.from_point.file and move.from_point.file != piece.point.file):
+                    corresponds_to_from_point = False
+                else:
+                    corresponds_to_from_point = True
+
+                if corresponds_to_from_point:
+                    if move.is_capture:
+                        if piece.motion_strategy.is_capture_possible(self, piece.point, move.to_point):
+                            suitable_pieces.append(copy.copy(piece))
+                    else:
+                        if piece.motion_strategy.is_move_possible(self, piece.point, move.to_point):
+                            suitable_pieces.append(copy.copy(piece))
         return suitable_pieces
 
     def _set_regular_move(self, previous_board_position, move):
         pieces = previous_board_position.find_suitable_pieces(move)
 
-        print str(len(pieces)) + " pieces were found suitable for move " + move.algebraic_notation
-
-        #if len(pieces) != 1:
-        #    raise Exception(str(len(pieces)) + " pieces were found suitable for move " + move.algebraic_notation)
+        if len(pieces) != 1:
+            raise Exception(str(len(pieces)) + " pieces were found suitable for move " + move.algebraic_notation)
 
         for piece in self._pieces:
             if move.is_capture and piece.point == move.to_point:
@@ -140,11 +145,9 @@ class BoardPosition(object):
         new_board_position = copy.deepcopy(self)
 
         if move.is_king_castling:
-            print "king castling"
             new_board_position._set_king_castling()
         else:
             if move.is_queen_castling:
-                print "queen castling"
                 new_board_position._set_queen_castling()
             else:
                 new_board_position._set_regular_move(self, move)

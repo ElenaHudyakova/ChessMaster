@@ -5,6 +5,9 @@ from chess_game.board import Point
 from chess_game.game import *
 
 class ChessFileTests(unittest.TestCase):
+
+    setUpResult = None
+
     def get_game_header(self):
         return "[Event \"London m5\"]\n"\
                "[Site \"London\"]\n"\
@@ -28,11 +31,13 @@ class ChessFileTests(unittest.TestCase):
         file.write(content)
 
     def setUp(self):
-        self.path = os.path.dirname(__file__)
-        filename = os.path.join(self.path, "test_files/one_game.pgn")
-        self.create_file(filename, self.get_game_header() + "\n" + self.get_game_body())
-        test_file = ChessFile(filename)
-        self.game = test_file.next()
+        if self.setUpResult is None:
+            self.setUpResult = 1
+            self.path = os.path.dirname(__file__)
+            filename = os.path.join(self.path, "test_files/one_game.pgn")
+            self.create_file(filename, self.get_game_header() + "\n" + self.get_game_body())
+            test_file = ChessFile(filename)
+            self.game = test_file.next()
 
     def test_no_file(self):
         self.assertRaises(IOError, ChessFile, "no_file")
@@ -176,6 +181,24 @@ class ChessFileTests(unittest.TestCase):
         self.assertEqual(ROOK, self.game.board_positions[28][("a", 1)].type)
         self.assertEqual(ROOK, self.game.board_positions[29][("d", 1)].type)
         self.assertEqual(None, self.game.board_positions[29][("a", 1)])
+
+    def test_game_simulation_Kh8(self):
+        self.assertEqual(KING, self.game.board_positions[33][("g", 8)].type)
+        self.assertEqual(KING, self.game.board_positions[34][("h", 8)].type)
+        self.assertEqual(None, self.game.board_positions[34][("g", 8)])
+
+    def test_game_simulation_Nxd5(self):
+        self.assertEqual(KNIGHT, self.game.board_positions[36][("c", 3)].type)
+        self.assertNotEqual(None, self.game.board_positions[37][("d", 5)])
+        self.assertEqual(KNIGHT, self.game.board_positions[37][("d", 5)].type)
+        self.assertEqual(None, self.game.board_positions[37][("c", 3)])
+
+    def test_game_simulation_Rxf8(self):
+        self.assertEqual(ROOK, self.game.board_positions[42][("d", 8)].type)
+        self.assertNotEqual(None, self.game.board_positions[43][("f", 8)])
+        self.assertEqual(ROOK, self.game.board_positions[43][("f", 8)].type)
+        self.assertEqual(None, self.game.board_positions[43][("d", 8)])
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,3 +6,6 @@ class Piece(object):
         self.type = None
         self.point = point
         self.color = color
+
+    def __str__(self):
+        return str(self.type) + " " + str(self.point) + " " + str(self.color)
