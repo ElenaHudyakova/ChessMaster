@@ -8,5 +8,7 @@ class Move(object):
         self.from_point = None
         self.is_capture = None
         self.is_check = None
+        self.is_promotion = None
+        self.promotion_piece_type = None
         self.is_king_castling = None
         self.is_queen_castling = None

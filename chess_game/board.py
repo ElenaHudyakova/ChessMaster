@@ -1,6 +1,6 @@
 import copy
 from chess_game.game import *
-from chess_game.piece_factory import create_piece
+from chess_game.piece_factory import create_piece, change_piece_type
 
 class Point(object):
     def __init__(self, file = None, rank = None):
@@ -46,12 +46,21 @@ class BoardPosition(object):
     def __getitem__(self, key):
         try:
             point = Point(key[0], key[1])
-            for piece in self._pieces:
-                if piece.point == point:
-                    return piece
-            return None
         except :
-            raise Exception("Invalid index for board_position " + str(key))
+            try:
+                if key.__class__ == Point:
+                    point = key
+                else:
+                    raise Exception
+            except :
+                raise Exception("Invalid index for board_position " + str(key))
+        for piece in self._pieces:
+            if piece.point == point:
+                return piece
+        return None
+
+    def __len__(self):
+        return len(self._pieces)
 
     @staticmethod
     def get_initial_board_position():
@@ -87,8 +96,9 @@ class BoardPosition(object):
     def find_suitable_pieces(self, move):
         suitable_pieces = list()
         for piece in self._pieces:
+#            if move.algebraic_notation == "cxd8=Q+" and move.move_number == 31:
+#                print piece
             if (piece.type == move.piece_type) and (piece.color == move.color):
-
                 if (move.from_point.rank and move.from_point.rank != piece.point.rank) or (move.from_point.file and move.from_point.file != piece.point.file):
                     corresponds_to_from_point = False
                 else:
@@ -104,16 +114,28 @@ class BoardPosition(object):
         return suitable_pieces
 
     def _set_regular_move(self, previous_board_position, move):
-        pieces = previous_board_position.find_suitable_pieces(move)
+        suitable_pieces = previous_board_position.find_suitable_pieces(move)
 
-        if len(pieces) != 1:
-            raise Exception(str(len(pieces)) + " pieces were found suitable for move " + move.algebraic_notation)
+        if len(suitable_pieces) != 1:
+            for piece in suitable_pieces:
+                print piece
+            raise Exception(str(len(suitable_pieces)) + " pieces were found suitable for move " + str(move.move_number) + " " + move.algebraic_notation)
 
-        for piece in self._pieces:
+        if move.is_capture:
+            self._pieces.remove(self[move.to_point])
+        if move.is_promotion:
+            change_piece_type(self[suitable_pieces[0].point], move.promotion_piece_type)
+        self[suitable_pieces[0].point].point = move.to_point
+
+        """for piece in self._pieces:
+            if move.algebraic_notation == "fxe5":
+                print piece
             if move.is_capture and piece.point == move.to_point:
                 self._pieces.remove(piece)
-            if piece.point == pieces[0].point:
-                piece.point = move.to_point
+            if piece.point == suitable_pieces[0].point:
+                if move.algebraic_notation == "fxe5":
+                    print 1
+                piece.point = move.to_point"""
 
     def _set_king_castling(self):
         if self.active_color == WHITE:

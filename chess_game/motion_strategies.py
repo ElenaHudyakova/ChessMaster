@@ -41,13 +41,14 @@ class PawnMotionStrategy(MotionStrategy):
         else:
             return False
 
-    def _can_move(self, color, from_point, to_point):
+    def _can_move(self, board_position, color, from_point, to_point):
         if color == WHITE:
             direction = 1
         else:
             direction = -1
         if self._is_first_move(color, from_point):
-            if to_point.file == from_point.file and (to_point.rank == from_point.rank + direction or to_point.rank == from_point.rank + direction*2):
+            if to_point.file == from_point.file and (to_point.rank == from_point.rank + direction or (to_point.rank == from_point.rank + direction*2\
+            and board_position[(from_point.file, from_point.rank + direction)] is None)):
                 return True
             else:
                 return False
@@ -70,7 +71,7 @@ class PawnMotionStrategy(MotionStrategy):
 
     def is_move_possible(self, board_position, from_point, to_point):
         if board_position[(to_point.file,to_point.rank)] is None\
-                and  self._can_move(board_position.active_color, from_point, to_point):
+                and  self._can_move(board_position, board_position.active_color, from_point, to_point):
             return True
         else:
             return False
