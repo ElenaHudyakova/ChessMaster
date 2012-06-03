@@ -1,6 +1,6 @@
 class InvalidMoveException(Exception):
     def __init__(self, message):
-        super(InvalidMoveException, self).__init__(message)
+        super(InvalidMoveException, self).__init__("InvalidMoveException: " + message)
 
 
 class InvalidCaptureException(Exception):

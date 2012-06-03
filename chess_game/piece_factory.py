@@ -22,5 +22,6 @@ def create_piece(type, point, color):
     return piece
 
 def change_piece_type(piece, type):
-    piece.type = type
-    piece.motion_strategy = _get_motion_strategy(type)
+    new_piece = Piece(_get_motion_strategy(type), piece.point, piece.color)
+    new_piece.type = type
+    return new_piece

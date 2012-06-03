@@ -1,4 +1,5 @@
 import re
+from chess_exceptions.chess_exceptions import InvalidMoveRecord
 from moves_parse import parse_move
 from chess_game.game import Game, WHITE, BLACK
 from chess_game.move import Move
@@ -41,7 +42,10 @@ class ChessFile(object):
                     move_number += 1
         game.moves.pop()
         for move in game.moves:
-            parse_move(move)
+            try:
+                parse_move(move)
+            except InvalidMoveRecord as error:
+                raise error
 
 
     def _parse_game(self, notation_str, game):
@@ -55,11 +59,14 @@ class ChessFile(object):
     def next(self):
         game = Game()
         notation_str = ""
+
         if self.startTagLine:
             notation_str += self.startTagLine
+
         line = self.file.readline()
         if self.eof or line == "":
             raise StopIteration
+
         while 1:
             if line == "":
                 self.eof = True
@@ -71,7 +78,13 @@ class ChessFile(object):
                 else:
                     notation_str += line
             line = self.file.readline()
-        self._parse_game(notation_str, game)
-        game.simulate()
+
+        try:
+            self._parse_game(notation_str, game)
+            game.simulate()
+        except Exception as error:
+            print error.message
+            raise Exception("Invalid game")
+
         return game
 

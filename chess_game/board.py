@@ -1,70 +1,51 @@
 import copy
+from chess_exceptions.chess_exceptions import InvalidMoveException
 from chess_game.game import *
+from chess_game.point import Point
 from chess_game.piece_factory import create_piece, change_piece_type
 
-class Point(object):
-    def __init__(self, file = None, rank = None):
-        self.file = file
-        self.rank = rank
-
-
-    def __setattr__(self, key, value):
-        if (type(value).__name__ == "str") and (key == "file"):
-            self.__dict__[key] = {
-                'a': lambda: 1,
-                'b': lambda: 2,
-                'c': lambda: 3,
-                'd': lambda: 4,
-                'e': lambda: 5,
-                'f': lambda: 6,
-                'g': lambda: 7,
-                'h': lambda: 8,
-                '': lambda : None
-                }[value]()
-        else:
-            self.__dict__[key] = value
-
-    def __cmp__(self, other):
-        if (self.file == other.file) and (self.rank == other.rank):
-            return 0
-        else:
-            return 1
-
-    def __str__(self):
-        return "(" + str(self.file) + ", " + str(self.rank) + ")"
-
-class BoardPosition(object):
+class BoardState(object):
     def __init__(self):
         self.active_color = None
         self.en_passant_point = None
-        self._pieces = list()
-
+        self.pieces = list()
 
     def add_piece(self, piece):
-        self._pieces.append(piece)
+        self.pieces.append(piece)
+
+    def serialize(self):
+        blobs = [0, 0, 0, 0];
+        for file in range(1,9):
+            for rank in range(1,9):
+                point = Point(file, rank)
+                blobs[(file-1)/2] *= 16
+                if not (self[point] is None):
+                    blobs[(file-1)/2]  += self[point].type + self[point].color*8;
+                else:
+                    blobs[(file-1)/2]  += 14;
+        return blobs
+
 
     def __getitem__(self, key):
+        """Get piece in the appropriate point of the board"""
         try:
             point = Point(key[0], key[1])
         except :
-            try:
-                if key.__class__ == Point:
-                    point = key
-                else:
-                    raise Exception
-            except :
+            if key.__class__ == Point:
+                point = key
+            else:
                 raise Exception("Invalid index for board_position " + str(key))
-        for piece in self._pieces:
+        for piece in self.pieces:
             if piece.point == point:
                 return piece
         return None
 
     def __len__(self):
-        return len(self._pieces)
+        return len(self.pieces)
 
     @staticmethod
     def get_initial_board_position():
-        board = BoardPosition()
+        board = BoardState()
         for i in range(1,9):
             board.add_piece(create_piece(PAWN, Point(i, 2), WHITE))
             board.add_piece(create_piece(PAWN, Point(i, 7), BLACK))
@@ -95,47 +76,40 @@ class BoardPosition(object):
 
     def find_suitable_pieces(self, move):
         suitable_pieces = list()
-        for piece in self._pieces:
-#            if move.algebraic_notation == "cxd8=Q+" and move.move_number == 31:
-#                print piece
+        for piece in self.pieces:
             if (piece.type == move.piece_type) and (piece.color == move.color):
-                if (move.from_point.rank and move.from_point.rank != piece.point.rank) or (move.from_point.file and move.from_point.file != piece.point.file):
-                    corresponds_to_from_point = False
-                else:
-                    corresponds_to_from_point = True
+                corresponds_to_from_point = not ((move.from_point.rank and move.from_point.rank != piece.point.rank) or
+                                                 (move.from_point.file and move.from_point.file != piece.point.file))
 
                 if corresponds_to_from_point:
                     if move.is_capture:
-                        if piece.motion_strategy.is_capture_possible(self, piece.point, move.to_point):
+                        if piece.can_capture(self, move.to_point):
                             suitable_pieces.append(copy.copy(piece))
                     else:
-                        if piece.motion_strategy.is_move_possible(self, piece.point, move.to_point):
+                        if piece.can_move(self, move.to_point):
                             suitable_pieces.append(copy.copy(piece))
         return suitable_pieces
 
-    def _set_regular_move(self, previous_board_position, move):
-        suitable_pieces = previous_board_position.find_suitable_pieces(move)
+    def _set_regular_move(self, move):
+        suitable_pieces = self.find_suitable_pieces(move)
 
         if len(suitable_pieces) != 1:
-            for piece in suitable_pieces:
-                print piece
-            raise Exception(str(len(suitable_pieces)) + " pieces were found suitable for move " + str(move.move_number) + " " + move.algebraic_notation)
+            raise InvalidMoveException(str(len(suitable_pieces)) + " pieces were found suitable for move " + str(move.move_number) + " " + move.algebraic_notation)
+
+#        if move.is_capture:
+#            self.pieces.remove(self[move.to_point])
+
+#        self[suitable_pieces[0].point].point = move.to_point
 
         if move.is_capture:
-            self._pieces.remove(self[move.to_point])
+            suitable_pieces[0].capture(self, move.to_point)
+        else:
+            suitable_pieces[0].move(self, move.to_point)
         if move.is_promotion:
-            change_piece_type(self[suitable_pieces[0].point], move.promotion_piece_type)
-        self[suitable_pieces[0].point].point = move.to_point
+            for i in range(len(self.pieces)):
+                if self.pieces[i].point == move.to_point:
+                    self.pieces[i] = change_piece_type(self[move.to_point], move.promotion_piece_type)
 
-        """for piece in self._pieces:
-            if move.algebraic_notation == "fxe5":
-                print piece
-            if move.is_capture and piece.point == move.to_point:
-                self._pieces.remove(piece)
-            if piece.point == suitable_pieces[0].point:
-                if move.algebraic_notation == "fxe5":
-                    print 1
-                piece.point = move.to_point"""
 
     def _set_king_castling(self):
         if self.active_color == WHITE:
@@ -147,7 +121,7 @@ class BoardPosition(object):
             self[("e", rank)].point = Point("g",rank)
             self[("h", rank)].point = Point("f", rank)
         else:
-            raise Exception("Invalid king caslting")
+            raise InvalidMoveException("Invalid king caslting")
 
 
     def _set_queen_castling(self):
@@ -160,19 +134,23 @@ class BoardPosition(object):
             self[("e", rank)].point = Point("c",rank)
             self[("a", rank)].point = Point("d", rank)
         else:
-            raise Exception("Invalid queen caslting")
+            raise InvalidMoveException("Invalid queen caslting")
 
 
     def get_next_board_position(self, move):
         new_board_position = copy.deepcopy(self)
 
-        if move.is_king_castling:
-            new_board_position._set_king_castling()
-        else:
-            if move.is_queen_castling:
-                new_board_position._set_queen_castling()
+        try:
+            if move.is_king_castling:
+                new_board_position._set_king_castling()
             else:
-                new_board_position._set_regular_move(self, move)
+                if move.is_queen_castling:
+                    new_board_position._set_queen_castling()
+                else:
+                    new_board_position._set_regular_move(move)
+        except Exception as error:
+            print error.message
+            raise Exception("Can not simulate move " + move.algebraic_notation)
 
         if self.active_color == WHITE:
             new_board_position.active_color = BLACK

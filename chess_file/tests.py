@@ -1,7 +1,7 @@
 import unittest
 import os
 from chess_file.chess_file import  ChessFile
-from chess_game.board import Point
+from chess_game.point import Point
 from chess_game.game import *
 
 class ChessFileTests(unittest.TestCase):
@@ -38,6 +38,8 @@ Rxa2 42. Nc6 e4+ 43. Kg3 Ra3+ 44. Kf4 e3 45. Rb2 Bd3 46. Ne5 Bf5
 47. Ng4+ Bxg4 48. Kxg4 Ke5 49. Kf3 Kd4 50. Rb7 f5 51. g3 a5 52. Rd7+ Kc5
 53. Re7 Kd4 54. Rd7+ Ke5 55. Re7+ Kd4 1/2-1/2"""
 
+    def get_game_body_en_passant(self):
+        return "1. a4 a6 2. a5 b5 3. b6 1/2-1/2"
 
 
     def create_file(self, filename, content):
@@ -221,6 +223,18 @@ Rxa2 42. Nc6 e4+ 43. Kg3 Ra3+ 44. Kf4 e3 45. Rb2 Bd3 46. Ne5 Bf5
 
         self.assertEqual(PAWN, self.game.board_positions[60][("c", 7)].type)
         self.assertEqual(QUEEN, self.game.board_positions[61][("d", 8)].type)
+
+    def test_game_simulation_en_passant(self):
+        filename = os.path.join(self.path, "test_files/one_game.pgn")
+        self.create_file(filename, self.get_game_header() + "\n" + self.get_game_body_en_passant())
+        test_file = ChessFile(filename)
+        self.game = test_file.next()
+
+        self.assertEqual(PAWN, self.game.board_positions[4][("b", 5)].type)
+        self.assertEqual(PAWN, self.game.board_positions[4][("a", 5)].type)
+        self.assertEqual(PAWN, self.game.board_positions[5][("b", 6)].type)
+        self.assertEqual(None, self.game.board_positions[5][("b", 5)])
+
 
 if __name__ == '__main__':
     unittest.main()

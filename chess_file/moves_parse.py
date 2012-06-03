@@ -1,6 +1,7 @@
 import re
+from chess_exceptions.chess_exceptions import InvalidMoveRecord
 from chess_game.game import *
-from chess_game.board import Point
+from chess_game.point import Point
 
 def _parse_castling_move(move):
     if move.algebraic_notation == "O-O":
@@ -39,5 +40,4 @@ def parse_move(move):
                 if move.is_promotion:
                     move.promotion_piece_type = _get_piece_type(m.group("promotion_piece_type"))
             except ValueError:
-                print ValueError
-                raise Exception("Invalid move record " + move.algebraic_notation + " in file")
+                raise InvalidMoveRecord("Invalid move record " + move.algebraic_notation + " in file")
