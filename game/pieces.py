@@ -19,6 +19,9 @@ class Piece(object):
     def can_capture(self, to_square,  board_state = None):
         return self._motion_strategy.is_capture_possible(self, to_square, board_state)
 
+    def can_attack(self, to_square,  board_state):
+        return self._motion_strategy.is_attack_possible(self, to_square, board_state)
+
     def move(self, board_state, to_square):
         self._motion_strategy.make_move(board_state, self, to_square)
 
@@ -70,6 +73,9 @@ class MotionStrategy(object):
         else:
             return self._can_move(piece, to_square)
 
+    def is_attack_possible(self, piece, to_square, board_state):
+        return self._can_move(piece, to_square, board_state)
+
     def make_move(self, board_state, piece, to_square):
         board_state[piece.square].square = to_square
 
@@ -115,7 +121,7 @@ class PawnMotionStrategy(MotionStrategy):
         else:
             return False
 
-    def _can_capture(self, piece, to_square):
+    def _can_capture(self, piece, to_square, board_state = None):
         direction = self._get_direction(piece.color)
         if math.fabs(piece.square.file-to_square.file) == 1 and piece.square.rank + direction == to_square.rank:
             return True
@@ -142,6 +148,9 @@ class PawnMotionStrategy(MotionStrategy):
             or (self._can_en_passant(piece, to_square, board_state))
         else:
             return self._can_capture(piece, to_square)
+
+    def is_attack_possible(self, piece, to_square, board_state):
+        return self._can_capture(piece, to_square, board_state)
 
     def _make_en_passant_capture(self, board_state, piece, to_square):
         if board_state.en_passant_target_square and board_state.en_passant_target_square == to_square:
@@ -239,22 +248,7 @@ class RookMotionStrategy(MotionStrategy):
 
 class QueenMotionStrategy(MotionStrategy):
 
-    def is_move_possible(self, piece, to_square, board_state = None):
+    def _can_move(self, piece, to_square, board_state = None):
         rook_strategy = RookMotionStrategy()
         bishop_strategy = BishopMotionStrategy()
-        if board_state[(to_square.file,to_square.rank)] is None\
-        and (rook_strategy._can_move(piece, to_square, board_state) or bishop_strategy._can_move(piece, to_square, board_state)):
-            return True
-        else:
-            return False
-
-    def is_capture_possible(self, piece, to_square, board_state = None):
-        from_square = piece.square
-        rook_strategy = RookMotionStrategy()
-        bishop_strategy = BishopMotionStrategy()
-        if not (board_state[(to_square.file, to_square.rank)] is None)\
-           and board_state[(to_square.file, to_square.rank)].color != board_state[(from_square.file,from_square.rank)].color\
-        and (rook_strategy._can_move(piece, to_square, board_state) or bishop_strategy._can_move(piece, to_square, board_state)):
-            return True
-        else:
-            return False
+        return rook_strategy._can_move(piece, to_square, board_state) or bishop_strategy._can_move(piece, to_square, board_state)

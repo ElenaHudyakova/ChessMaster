@@ -1,8 +1,9 @@
 import unittest
 from game.common import Move
-from game.game_module import BoardState, Square, Color
-from game.game_exceptions import InvalidSquareCoordException, InvalidBoardSquare, ImpossibleMoveException
+from game.game_module import BoardState, Square, Color, Game
+from game.game_exceptions import InvalidSquareCoordException, InvalidBoardSquare, ImpossibleMoveException, InvalidGameException
 from game.pieces import PieceCreator, PieceType
+from parsing.parsing_module import MoveParser
 
 
 class MyTestCase(unittest.TestCase):
@@ -411,11 +412,9 @@ class MyTestCase(unittest.TestCase):
 
     def test_kingside_castling_move(self):
         board = BoardState()
-        king = PieceCreator().create_piece(PieceType.KING, Square('e', 8), Color.BLACK)
-        rook = PieceCreator().create_piece(PieceType.ROOK, Square('h', 8), Color.BLACK)
-        board.add_piece(king)
-        board.add_piece(rook)
-        board = board.next(Move("O-O", Color.BLACK))
+        board.add_piece(PieceCreator().create_piece(PieceType.KING, Square('e', 8), Color.BLACK))
+        board.add_piece(PieceCreator().create_piece(PieceType.ROOK, Square('h', 8), Color.BLACK))
+        board = board.next(MoveParser().parse("O-O", Color.BLACK))
         self.assertEqual(PieceType.KING, board[('g', 8)].type)
 
     def test_queenside_castling_impossible(self):
@@ -424,7 +423,7 @@ class MyTestCase(unittest.TestCase):
         rook = PieceCreator().create_piece(PieceType.ROOK, Square('a', 7), Color.BLACK)
         board.add_piece(king)
         board.add_piece(rook)
-        self.assertRaises(ImpossibleMoveException, board.next, Move("O-O-O", Color.BLACK))
+        self.assertRaises(ImpossibleMoveException, board.next, MoveParser().parse("O-O-O", Color.BLACK))
 
     def test_queenside_castling_move(self):
         board = BoardState()
@@ -432,7 +431,7 @@ class MyTestCase(unittest.TestCase):
         rook = PieceCreator().create_piece(PieceType.ROOK, Square('a', 8), Color.BLACK)
         board.add_piece(king)
         board.add_piece(rook)
-        board = board.next(Move("O-O-O", Color.BLACK))
+        board = board.next(MoveParser().parse("O-O-O", Color.BLACK))
         self.assertEqual(PieceType.KING, board[('c', 8)].type)
 
     def test_queenside_castling(self):
@@ -472,7 +471,7 @@ class MyTestCase(unittest.TestCase):
         board.add_piece(PieceCreator().create_piece(PieceType.PAWN, Square('b', 7), Color.BLACK))
         board.add_piece(PieceCreator().create_piece(PieceType.PAWN, Square('a', 5), Color.WHITE))
         board.active_color = Color.WHITE
-        board = board.next(Move("b5", Color.BLACK))
+        board = board.next(MoveParser().parse("b5", Color.BLACK))
         self.assertEqual(True, board[('a', 5)].can_capture(Square('b', 6), board))
 
     def test_en_passant_capture_move(self):
@@ -480,8 +479,8 @@ class MyTestCase(unittest.TestCase):
         board.add_piece(PieceCreator().create_piece(PieceType.PAWN, Square('b', 7), Color.BLACK))
         board.add_piece(PieceCreator().create_piece(PieceType.PAWN, Square('a', 5), Color.WHITE))
         board.active_color = Color.WHITE
-        board = board.next(Move("b5", Color.BLACK))
-        board = board.next(Move("b6", Color.WHITE))
+        board = board.next(MoveParser().parse("b5", Color.BLACK))
+        board = board.next(MoveParser().parse("b6", Color.WHITE))
         self.assertEqual(None, board[('b', 5)])
         self.assertEqual(Color.WHITE, board[('b', 6)].color)
 
@@ -491,16 +490,16 @@ class MyTestCase(unittest.TestCase):
         board.add_piece(PieceCreator().create_piece(PieceType.PAWN, Square('a', 4), Color.WHITE))
         board.add_piece(PieceCreator().create_piece(PieceType.PAWN, Square('d', 7), Color.BLACK))
         board.active_color = Color.WHITE
-        board = board.next(Move("b5", Color.BLACK))
-        board = board.next(Move("a5", Color.WHITE))
-        board = board.next(Move("d6", Color.BLACK))
+        board = board.next(MoveParser().parse("b5", Color.BLACK))
+        board = board.next(MoveParser().parse("a5", Color.WHITE))
+        board = board.next(MoveParser().parse("d6", Color.BLACK))
         self.assertEqual(False, board[('a', 5)].can_capture(Square('b', 6), board))
 
     def test_promotion_move(self):
         board = BoardState()
         board.add_piece(PieceCreator().create_piece(PieceType.PAWN, Square('b', 7), Color.WHITE))
         board.active_color = Color.BLACK
-        board = board.next(Move("b8=Q", Color.WHITE))
+        board = board.next(MoveParser().parse("b8=Q", Color.WHITE))
         self.assertEqual(PieceType.QUEEN, board[('b', 8)].type)
 
     def test_queen_capture(self):
@@ -508,7 +507,7 @@ class MyTestCase(unittest.TestCase):
         board.add_piece(PieceCreator().create_piece(PieceType.QUEEN, Square('d', 4), Color.WHITE))
         board.add_piece(PieceCreator().create_piece(PieceType.PAWN, Square('f', 6), Color.BLACK))
         board.active_color = Color.BLACK
-        board = board.next(Move('Qxf6', Color.WHITE))
+        board = board.next(MoveParser().parse('Qxf6', Color.WHITE))
         self.assertEqual(None, board[('d', 4)])
         self.assertEqual(PieceType.QUEEN, board[('f', 6)].type)
 
@@ -530,13 +529,18 @@ class MyTestCase(unittest.TestCase):
     def test_no_pieces_to_move(self):
         board = BoardState()
         board.add_piece(PieceCreator().create_piece(PieceType.ROOK, Square('d', 5), Color.BLACK))
-        self.assertRaises(ImpossibleMoveException, board.next, Move('b7', Color.BLACK))
+        self.assertRaises(ImpossibleMoveException, board.next, MoveParser().parse('b7', Color.BLACK))
 
     def test_many_pieces_to_move(self):
         board = BoardState()
         board.add_piece(PieceCreator().create_piece(PieceType.ROOK, Square('d', 5), Color.BLACK))
         board.add_piece(PieceCreator().create_piece(PieceType.BISHOP, Square('f', 7), Color.BLACK))
         self.assertRaises(ImpossibleMoveException, board.next, Move('h5', Color.BLACK))
+
+    def test_exception_during_game_simulation(self):
+        game = Game()
+        game.moves.append(MoveParser().parse('c5'))
+        self.assertRaises(InvalidGameException, game.simulate)
 
 if __name__ == '__main__':
     unittest.main()

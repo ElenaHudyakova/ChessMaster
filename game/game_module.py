@@ -2,9 +2,9 @@ import copy
 from sqlalchemy.schema import Column
 from sqlalchemy.types import String, Integer
 from common import Color, Square, PieceType
+from game_exceptions import InvalidGameException
 from pieces import PieceCreator
 from game_exceptions import InvalidBoardSquare, ImpossibleMoveException
-from parsing.parsing_module import MoveParser
 from storage.storage import session, Base
 
 class Game(Base):
@@ -20,14 +20,19 @@ class Game(Base):
     round = Column(String)
 
     def __init__(self):
-        self.tags = dict()
         self.moves = list()
         self.board_states = list()
 
     def simulate(self):
-        self.board_states.append(BoardState().make_initial_setup())
+        initial_setup = BoardState()
+        initial_setup.make_initial_setup()
+        self.board_states.append(initial_setup)
         for i in range(len(self.moves)):
-            self.board_states.append(self.board_states[i].next(self.moves[i]))
+            try:
+                self.board_states.append(self.board_states[i].next(self.moves[i]))
+            except :
+                raise InvalidGameException('Error in the simulation on the %s halfmove' % str(i+1))
+
 
     def save(self, game_id, board_state):
         session.add(self)
@@ -44,7 +49,7 @@ class BoardState(object):
         self.en_passant_target_square = None
         self.is_en_passant_for_next = None
         self.pieces = list()
-        self.fullmove_number = 1
+        self.fullmove_number = 0
 
     def add_piece(self, piece):
         self.pieces.append(piece)
@@ -111,7 +116,7 @@ class BoardState(object):
 
     def square_is_under_attack(self, square):
         for piece in self.pieces:
-            if piece.color != self.active_color and piece.can_capture(square):
+            if piece.color != self.active_color and piece.can_attack(square, self):
                 return True
         return False
 
@@ -197,7 +202,6 @@ class BoardState(object):
         return suitable_pieces
 
     def next(self, move):
-        move.parse(MoveParser())
         new_board = copy.deepcopy(self)
 
         if self.active_color == Color.WHITE:

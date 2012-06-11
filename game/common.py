@@ -111,9 +111,6 @@ class Move(Base):
         self.is_king_castling = False
         self.is_queen_castling = False
 
-    def parse(self, move_parser):
-        move_parser.parse(self)
-
     def save(self, game_id, board_state):
         self.game_id = game_id
         serial = board_state.serialize()

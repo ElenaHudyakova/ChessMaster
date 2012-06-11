@@ -12,3 +12,6 @@ class InvalidMoveRecordException(Exception):
 
 class InvalidBoardSquare(Exception):
     pass
+
+class InvalidGameException(Exception):
+    pass
