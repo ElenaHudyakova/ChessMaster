@@ -46,18 +46,26 @@ class Square(object):
         else:
             return 1
 
+    @staticmethod
+    def digit_to_file(digit):
+        try:
+            file = {
+                1: lambda: 'a',
+                2: lambda: 'b',
+                3: lambda: 'c',
+                4: lambda: 'd',
+                5: lambda: 'e',
+                6: lambda: 'f',
+                7: lambda: 'g',
+                8: lambda: 'h',
+                None: lambda: 'None'
+            }[digit]()
+        except :
+            pass
+        return file
+
     def __str__(self):
-        file = {
-            1: lambda: 'a',
-            2: lambda: 'b',
-            3: lambda: 'c',
-            4: lambda: 'd',
-            5: lambda: 'e',
-            6: lambda: 'f',
-            7: lambda: 'g',
-            8: lambda: 'h',
-            None: lambda: 'None'
-        }[self.file]()
+        file = self.digit_to_file(self.file)
         return "(" + file + ", " + str(self.rank) + ")"
 
 class PieceType:

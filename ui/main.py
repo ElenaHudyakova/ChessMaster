@@ -1,5 +1,91 @@
 import sys
-from PyQt4 import QtGui
+from PyQt4 import QtCore, QtGui
+from game.common import Square, PieceType, Color
+from game.game_module import BoardState
+
+class BoardScene(QtGui.QGraphicsScene):
+
+    def __init__(self, board_state = None):
+        if board_state is None:
+            self.board_state = BoardState()
+            self.board_state.make_initial_setup()
+        else:
+            self.board_state = board_state
+        super(BoardScene, self).__init__()
+        self.initUI()
+
+    def _get_image_filename(self, piece):
+        if piece is None:
+            return
+        filename = 'img/'
+        if piece.type == PieceType.BISHOP:
+            filename += 'bishop'
+        if piece.type == PieceType.KING:
+            filename += 'king'
+        if piece.type == PieceType.KNIGHT:
+            filename += 'knight'
+        if piece.type == PieceType.PAWN:
+            filename += 'pawn'
+        if piece.type == PieceType.QUEEN:
+            filename += 'queen'
+        if piece.type == PieceType.ROOK:
+            filename += 'rook'
+        filename+= '_'
+        if piece.color == Color.WHITE:
+            filename += 'white'
+        else:
+            filename += 'black'
+        filename += '.png'
+        return filename
+
+
+    def initUI(self):
+        self.setSceneRect(0,0, 400, 400)
+        font=QtGui.QFont('White Rabbit')
+        font.setPointSize(15)
+
+        black_brush = QtGui.QBrush(QtGui.QColor(50, 125, 215), QtCore.Qt.SolidPattern)
+        white_brush = QtGui.QBrush(QtGui.QColor(255, 240, 225), QtCore.Qt.SolidPattern)
+
+        squares = list()
+        for i in range(1,9):
+            row = list()
+            squares.append(row)
+
+        for i in range(1,9):
+            file=QtGui.QGraphicsTextItem(Square.digit_to_file(i))
+            file.setPos(40*i + 13 , 370)
+            file.setFont(font)
+            self.addItem(file)
+
+            file=QtGui.QGraphicsTextItem(Square.digit_to_file(i))
+            file.setPos(40*i + 13 , 8)
+            file.setFont(font)
+            self.addItem(file)
+
+            rank=QtGui.QGraphicsTextItem(str(9-i))
+            rank.setPos(10, 40*i + 11)
+            rank.setFont(font)
+            self.addItem(rank)
+
+            rank=QtGui.QGraphicsTextItem(str(9-i))
+            rank.setPos(372, 40*i + 11)
+            rank.setFont(font)
+            self.addItem(rank)
+
+        for i in range(1,9):
+            for j in range(1,9):
+                squares[i-1].append(QtGui.QGraphicsRectItem(40*i, 400 - 40*j - 40, 40, 40, scene = self))
+                if (i+j)%2 == 0:
+                    squares[i-1][j-1].setBrush(black_brush)
+                else:
+                    squares[i-1][j-1].setBrush(white_brush)
+
+                piece = self.board_state[Square(i, j)]
+                if not piece is None:
+                    piece_img = QtGui.QGraphicsPixmapItem(QtGui.QPixmap(self._get_image_filename(piece)), scene = self)
+#                    piece_img = QtGui.QGraphicsPixmapItem(QtGui.QPixmap('img/king_black.png'), scene = self)
+                    piece_img.setOffset(40*i, 400 - 40*j - 40)
 
 
 class MainWindow(QtGui.QWidget):
@@ -67,8 +153,9 @@ class MainWindow(QtGui.QWidget):
         clear_button.move(self.SHIFT + 50 + 150, self.UP + 20 + self.LABEL_DIST*5 + 40)
 
     def _create_central_block(self):
-        self.chess_board = QtGui.QGraphicsView(self)
-        self.chess_board.resize(400, 400)
+        self.board = BoardScene()
+        self.chess_board = QtGui.QGraphicsView(self.board, parent = self)
+        self.chess_board.resize(402, 402)
         self.chess_board.move(self.SHIFT + 350 + self.SHIFT, self.SHIFT)
 
         start_move_button = QtGui.QPushButton('<<', self)
