@@ -11,13 +11,13 @@ class Game(Base):
     __tablename__ = 'games'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    event = Column(String)
-    date = Column(String)
-    site = Column(String)
-    result = Column(String)
-    white = Column(String)
-    black = Column(String)
-    round = Column(String)
+    event = Column(String, default = '')
+    date = Column(String, default = '')
+    site = Column(String, default = '')
+    result = Column(String, default = '')
+    white = Column(String, default = '')
+    black = Column(String, default = '')
+    round = Column(String, default = '')
 
     def __init__(self):
         self.moves = list()
@@ -33,14 +33,24 @@ class Game(Base):
             except :
                 raise InvalidGameException('Error in the simulation on the %s halfmove' % str(i+1))
 
-
-    def save(self, game_id, board_state):
-        session.add(self)
-        session.commit()
-
-    def read(self, id):
-        pass
-
+    def __cmp__(self, other):
+        if self.event != other.event:
+            return 1
+        if self.site != other.site:
+            return 1
+        if self.date != other.date:
+            return 1
+        if self.round != other.round:
+            return 1
+        if self.white != other.white:
+            return 1
+        if self.black != other.black:
+            return 1
+        if self.result != other.result:
+            return 1
+        if self.moves != other.moves:
+            return 1
+        return 0
 
 
 class BoardState(object):

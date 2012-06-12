@@ -1,4 +1,5 @@
 import os
+import sys
 from game.common import Move, PieceType, Square, Color
 from game.game_exceptions import InvalidMoveRecordException, InvalidGameException
 from parsing.parsing_module import MoveParser, ChessFile
@@ -72,13 +73,17 @@ class MyTestCase(unittest.TestCase):
         self.assertRaises(InvalidMoveRecordException, MoveParser().parse, 'Bxc6Rxa5')
 
     def test_no_file(self):
-        self.assertRaises(IOError, ChessFile, "no_file")
+        filename = os.path.join(self.path, "test_files/no_file.pgn")
+        test_file = ChessFile(filename)
+        self.assertRaises(StopIteration, test_file.next)
+        os.unlink(filename)
 
     def test_empty_file(self):
         filename = os.path.join(self.path, "test_files/empty.pgn")
         self.create_file(filename, "")
         test_file = ChessFile(filename)
         self.assertRaises(StopIteration, test_file.next)
+        os.remove(filename)
 
     def test_parse_one_game_file(self):
         filename = os.path.join(self.path, "test_files/one_game.pgn")
@@ -144,8 +149,29 @@ class MyTestCase(unittest.TestCase):
         test_file = ChessFile(filename)
         self.assertRaises(InvalidGameException, test_file.next)
 
+    def test_parse_with_init(self):
+        filename = os.path.join(self.path, "test_files/one_game.pgn")
+        test_file = ChessFile(filename)
+        game = test_file.next()
+        test_file.init()
+        game = test_file.next()
+        self.assertRaises(StopIteration, test_file.next)
 
+    def test_add_game_to_file(self):
+        filename1 = os.path.join(self.path, "test_files/two_games.pgn")
+        filename2 = os.path.join(self.path, "test_files/new_file.pgn")
+        test_file1 = ChessFile(filename1)
+        test_file2 = ChessFile(filename2)
+        game1 = test_file1.next()
+        game2 = test_file1.next()
 
+        test_file2.add_game(game1)
+        test_file2.add_game(game2)
+        test_file2.next()
+        test_file2.next()
+
+        self.assertRaises(StopIteration, test_file2.next)
+        os.remove(filename2)
 
 if __name__ == '__main__':
     unittest.main()

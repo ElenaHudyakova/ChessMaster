@@ -15,3 +15,7 @@ class InvalidBoardSquare(Exception):
 
 class InvalidGameException(Exception):
     pass
+
+class MoveSavingException(Exception):
+    pass
+

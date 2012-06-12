@@ -111,16 +111,8 @@ class Move(Base):
         self.is_king_castling = False
         self.is_queen_castling = False
 
-    def save(self, game_id, board_state):
-        self.game_id = game_id
-        serial = board_state.serialize()
-        self.serial0 = serial[0]
-        self.serial1 = serial[1]
-        self.serial2 = serial[2]
-        self.serial3 = serial[3]
-
-        session.add(self)
-        session.commit()
-
-    def read(self, id):
-        pass
+    def __cmp__(self, other):
+        if (self.notation == other.notation) and (self.color == other.color):
+            return 0
+        else:
+            return 1

@@ -52,7 +52,13 @@ class ChessFile(object):
     START_TAG = "Event"
 
     def __init__(self, filename):
-        self.file = open(filename)
+        try:
+            self.file = open(filename)
+        except IOError:
+            self.file = open(filename, "w")
+            self.file = open(filename, 'r')
+
+        self.filename = filename
         self._eof = False
         self._startTagLine = None
 
@@ -68,7 +74,6 @@ class ChessFile(object):
             setattr(game, tag_name.lower(), tag_value)
         except :
             pass
-
 
     def _parse_moves(self, line, game):
         line = line.strip()
@@ -96,6 +101,12 @@ class ChessFile(object):
             notation_str = notation_str.split("]", 1)[1]
             self._parse_tag(tag_line, game)
         self._parse_moves(notation_str, game)
+
+    def init(self):
+        self.file = open(self.filename, 'r')
+        self.file.seek(0)
+        self._eof = False
+        self._startTagLine = ''
 
     def next(self):
         game = Game()
@@ -126,3 +137,40 @@ class ChessFile(object):
             raise InvalidGameException()
 
         return game
+
+    def _get_tag_line(self, tag_name, value):
+        if value == '':
+            return '[%s "?"]\n' % tag_name
+        else:
+            return '[%s "%s"]\n' % (tag_name, value)
+
+    def _get_PGN_notation(self, game):
+        game_notation = ''
+        game_notation += '\n'
+        game_notation += self._get_tag_line('Event', game.event)
+        game_notation += self._get_tag_line('Site', game.site)
+        game_notation += self._get_tag_line('Date', game.date)
+        game_notation += self._get_tag_line('Round', game.round)
+        game_notation += self._get_tag_line('White', game.white)
+        game_notation += self._get_tag_line('Black', game.black)
+        game_notation += self._get_tag_line('Result', game.result)
+
+        game_notation += '\n'
+
+        for move in game.moves:
+            if move.color == Color.WHITE:
+                game_notation += '%s.%s ' % (str(move.fullmove_number), move.notation)
+            else:
+                game_notation += '%s ' % move.notation
+                if move.fullmove_number % 4 == 0:
+                    game_notation += '\n'
+
+        game_notation += game.result
+        game_notation += '\n\n'
+
+        return game_notation
+
+    def add_game(self, game):
+        self.file = open(self.filename, 'a')
+        self.file.write(self._get_PGN_notation(game))
+        self.init()
