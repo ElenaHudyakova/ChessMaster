@@ -28,7 +28,7 @@ class Storage(object):
     def read_game(self, id):
         game = Game()
         game = self.session.query(Game).get(id)
-        print len(game.moves)
+        return game
 
     def read_all_games(self):
         return self.session.query(Game).all()

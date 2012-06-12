@@ -9,6 +9,8 @@ class Piece(object):
         self.type = type
         self.square = square
         self.color = color
+        self.path = list()
+        self.path.append(square)
 
     def __str__(self):
         return str(self.type) + " " + str(self.square) + " " + str(self.color)
@@ -24,6 +26,7 @@ class Piece(object):
 
     def move(self, board_state, to_square):
         self._motion_strategy.make_move(board_state, self, to_square)
+        self.path.append(to_square)
 
     def capture(self, board_state, to_square):
         self._motion_strategy.make_capture(board_state, self, to_square)

@@ -542,5 +542,15 @@ class MyTestCase(unittest.TestCase):
         game.moves.append(MoveParser().parse('c5'))
         self.assertRaises(InvalidGameException, game.simulate)
 
+    def test_piece_path(self):
+        board = BoardState()
+        board.make_initial_setup()
+        path1 = board[('a', 2)].path
+        board = board.next(MoveParser().parse("a4", Color.WHITE))
+        path2 = board[('a', 4)].path
+        self.assertEqual([Square('a',2)], path1)
+        self.assertEqual([Square('a',2), Square('a', 4)], path2)
+
+
 if __name__ == '__main__':
     unittest.main()

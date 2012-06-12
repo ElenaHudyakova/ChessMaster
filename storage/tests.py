@@ -26,6 +26,7 @@ class MyTestCase(unittest.TestCase):
         game.simulate()
         id = storage.save_game(game)
         game1 = storage.read_game(id)
+        self.assertEqual(game1.moves[0].serial0, game.moves[0].serial0)
         self.assertEqual(game1, game)
 
     def test_read_all_games(self):

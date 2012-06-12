@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.schema import ForeignKey
-from sqlalchemy.types import BIGINT
+from sqlalchemy.types import BIGINT, BLOB, NUMERIC
 from game_exceptions import InvalidSquareCoordException
 from storage.storage import Base, session
 
@@ -92,10 +92,10 @@ class Move(Base):
     notation = Column(String)
     fullmove_number = Column(Integer)
     color = Column(Integer)
-    serial1 = Column(BIGINT)
-    serial2 = Column(BIGINT)
-    serial3 = Column(BIGINT)
-    serial0 = Column(BIGINT)
+    serial1 = Column(NUMERIC)
+    serial2 = Column(NUMERIC)
+    serial3 = Column(NUMERIC)
+    serial0 = Column(NUMERIC)
 
     def __init__(self, notation = '', color = Color.WHITE):
         self.notation = notation
