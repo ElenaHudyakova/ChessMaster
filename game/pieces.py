@@ -30,6 +30,11 @@ class Piece(object):
 
     def capture(self, board_state, to_square):
         self._motion_strategy.make_capture(board_state, self, to_square)
+        self.path.append(to_square)
+
+    def get_prev_square(self):
+        if len(self.path) > 1:
+            return self.path[-2]
 
 
 

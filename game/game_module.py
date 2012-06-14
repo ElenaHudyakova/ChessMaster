@@ -63,6 +63,7 @@ class BoardState(object):
         self.is_en_passant_for_next = None
         self.pieces = list()
         self.fullmove_number = 0
+        self.moving_pieces = []
 
     def add_piece(self, piece):
         self.pieces.append(piece)
@@ -166,8 +167,10 @@ class BoardState(object):
             else:
                 rank = 8
 
-            self[("e", rank)].square = Square("g",rank)
-            self[("h", rank)].square = Square("f", rank)
+            self[("e", rank)].move(self, Square("g",rank))
+            self[("h", rank)].move(self, Square("f", rank))
+            self.moving_pieces.append(self[("g", rank)])
+            self.moving_pieces.append(self[("f", rank)])
 
 
     def _set_queenside_castling(self):
@@ -177,8 +180,11 @@ class BoardState(object):
             else:
                 rank = 8
 
-            self[("e", rank)].square = Square("c",rank)
-            self[("a", rank)].square = Square("d", rank)
+            self[("e", rank)].move(self, Square("c",rank))
+            self[("a", rank)].move(self, Square("d", rank))
+            self.moving_pieces.append(self[("e", rank)])
+            self.moving_pieces.append(self[("a", rank)])
+
 
     def _set_regular_move(self, move):
         suitable_pieces = self._find_suitable_pieces(move)
@@ -197,6 +203,9 @@ class BoardState(object):
             for i in range(len(self.pieces)):
                 if self.pieces[i].square == move.to_square:
                     self.pieces[i] = PieceCreator().change_piece_type(self[move.to_square], move.promotion_piece_type)
+
+        self.moving_pieces.append(self[move.to_square])
+
 
     def _find_suitable_pieces(self, move):
         suitable_pieces = list()
@@ -222,6 +231,8 @@ class BoardState(object):
         else:
             new_board.fullmove_number += 1
             new_board.active_color = Color.WHITE
+
+        new_board.moving_pieces = []
 
         if not self.is_en_passant_for_next is None:
             if self.is_en_passant_for_next == True:

@@ -36,6 +36,7 @@ class BoardScene(QtGui.QGraphicsScene):
             self.board_state = board_state
         super(BoardScene, self).__init__()
         self.piece_images = []
+        self.painted_squares = []
         self.initUI()
 
     def _get_image_filename(self, piece):
@@ -115,8 +116,6 @@ class BoardScene(QtGui.QGraphicsScene):
 
     def redraw(self, board_state):
         self.board_state = board_state
-#        for i in range(len(self.piece_images)):
-#            self.removeItem(self.piece_images[i])
         for item in self.piece_images:
             self.removeItem(item)
         self.piece_images = []
@@ -126,6 +125,29 @@ class BoardScene(QtGui.QGraphicsScene):
             piece_img.setOffset(40*piece.square.file, 400 - 40*piece.square.rank - 40)
             piece_img.setZValue(2.0)
             self.piece_images.append(piece_img)
+
+        self._draw_move()
+
+    def _draw_move(self):
+        for item in self.painted_squares:
+            self.removeItem(item)
+        self.painted_squares = []
+
+        from_pen = QtGui.QPen(QtGui.QColor(255, 250, 50))
+        to_pen = QtGui.QPen(QtGui.QColor(50, 255, 50))
+        from_pen.setWidth(3)
+        to_pen.setWidth(3)
+
+        for piece in self.board_state.moving_pieces:
+            to_square = piece.square
+            self.painted_squares.append(QtGui.QGraphicsRectItem(40*to_square.file, 400 - 40*to_square.rank - 40, 40, 40, scene = self))
+            self.painted_squares[-1].setPen(to_pen)
+            self.painted_squares[-1].setZValue(2.5)
+
+            from_square = piece.get_prev_square()
+            self.painted_squares.append(QtGui.QGraphicsRectItem(40*from_square.file, 400 - 40*from_square.rank - 40, 40, 40, scene = self))
+            self.painted_squares[-1].setPen(from_pen)
+            self.painted_squares[-1].setZValue(1.5)
 
 
 class MainWindow(QtGui.QWidget):
@@ -154,6 +176,8 @@ class MainWindow(QtGui.QWidget):
 
     def _import_games(self):
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Open file')
+        if not filename:
+            return
         imported_games_num = 0
         invalid_games_num = 0
         try:
@@ -176,6 +200,29 @@ class MainWindow(QtGui.QWidget):
 
         self._show_all_games()
 
+    def _export_games(self):
+        filename = QtGui.QFileDialog.getSaveFileName(self, 'Export file')
+        if not filename:
+            return
+        exported_games_num = 0
+        invalid_games_num = 0
+        try:
+            chess_file = ChessFile(filename)
+            for game_item in self.games_list.selectedItems():
+                try:
+                    chess_file.add_game(game_item.content)
+                    exported_games_num += 1
+                except StopIteration:
+                    break
+                except Exception as err:
+                    invalid_games_num += 1
+        except :
+            pass
+
+        self.import_info_label.setText('%d games were exported, %d games caused mistakes ' % (exported_games_num, invalid_games_num))
+        self.import_info_label.move(self.SHIFT*2 + 350, 500)
+
+
     def _show_game(self):
         self.current_game = self.games_list.currentItem().content
         self.current_move_num  = -1
@@ -192,6 +239,7 @@ class MainWindow(QtGui.QWidget):
         self.round_label.setText('Round: \n%s' % self.current_game.round)
 
         self.move_list.clear()
+        self.move_list.addItem('')
         for move in self.current_game.moves:
             self.move_list.addItem(MoveItem(move))
 
@@ -200,31 +248,29 @@ class MainWindow(QtGui.QWidget):
     def _show_move(self):
         if not self.current_game is None:
             self.current_move_num = self.move_list.currentRow()
-            self.board.redraw(self.current_game.board_states[self.current_move_num + 1])
+            self.board.redraw(self.current_game.board_states[self.current_move_num])
 
     def _show_first_move(self):
         if not self.current_game is None:
-            self.current_move_num = -1
-            self.board.redraw(self.current_game.board_states[0])
-            self.move_list.setSelected(None)
+            self.current_move_num = 0
+            self.move_list.setCurrentRow(self.current_move_num)
 
     def _show_last_move(self):
         if not self.current_game is None:
-            self.current_move_num = len(self.current_game.moves) - 1
-            self.board.redraw(self.current_game.board_states[self.current_move_num + 1])
-
+            self.current_move_num = len(self.current_game.moves)
+            self.move_list.setCurrentRow(self.current_move_num)
 
     def _show_next_move(self):
         if not self.current_game is None:
-            if self.current_move_num < len(self.current_game.moves)-1:
+            if self.current_move_num < len(self.current_game.moves):
                 self.current_move_num += 1
-                self.board.redraw(self.current_game.board_states[self.current_move_num+1])
+                self.move_list.setCurrentRow(self.current_move_num)
 
     def _show_prev_move(self):
         if not self.current_game is None:
-            if self.current_move_num >= 0:
+            if self.current_move_num > 0:
                 self.current_move_num -= 1
-                self.board.redraw(self.current_game.board_states[self.current_move_num+1])
+                self.move_list.setCurrentRow(self.current_move_num)
 
 
     def _create_left_block(self):
@@ -232,6 +278,7 @@ class MainWindow(QtGui.QWidget):
         self.games_list.resize(350, self.UP - self.SHIFT*1.5)
         self.games_list.move(self.SHIFT, self.SHIFT)
         self.games_list.doubleClicked.connect(self._show_game)
+        self.games_list.setSelectionMode(QtGui.QAbstractItemView.ExtendedSelection)
 
         import_button = QtGui.QPushButton('Import PGN', self)
         import_button.resize(150, self.BUTTON_SIZE)
@@ -241,6 +288,7 @@ class MainWindow(QtGui.QWidget):
         export_button = QtGui.QPushButton('Export to PGN', self)
         export_button.resize(150, self.BUTTON_SIZE)
         export_button.move(self.SHIFT + 50 + 150, self.UP)
+        export_button.clicked.connect(self._export_games)
 
         event_search_label = QtGui.QLabel('Event ', self)
         event_search_label.move(self.SHIFT, self.UP + 20 + self.LABEL_DIST)
@@ -319,7 +367,7 @@ class MainWindow(QtGui.QWidget):
         self.move_list = QtGui.QListWidget(self)
         self.move_list.resize(100, 300)
         self.move_list.move(self.SHIFT*3 + 350 + 400, self.SHIFT)
-        self.move_list.clicked.connect(self._show_move)
+        self.move_list.currentItemChanged.connect(self._show_move)
 
         self.event_label = QtGui.QLabel('Event: ', self)
         self.event_label.move(self.SHIFT*3 + 350 + 400 + 100 + 20, self.SHIFT)
