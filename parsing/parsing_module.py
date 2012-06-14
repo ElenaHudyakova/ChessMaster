@@ -4,10 +4,13 @@ from game.game_exceptions import InvalidMoveRecordException, InvalidGameExceptio
 from game.game_module import Game
 
 class MoveParser(object):
-    def parse(self, notation, color = Color.WHITE):
-        move = Move()
-        move.color = color
-        move.notation = notation
+    def parse(self, notation = '', color = Color.WHITE, input_move = None):
+        if input_move is None:
+            move = Move()
+            move.color = color
+            move.notation = notation
+        else:
+            move = input_move
         is_castling = self._parse_castling_move(move)
         if not is_castling:
             try:
@@ -26,16 +29,19 @@ class MoveParser(object):
             except Exception as err:
                 raise InvalidMoveRecordException(move.notation)
         return move
-            
+
+
     def _parse_castling_move(self, move):
         if move.notation == "O-O":
             move.is_king_castling = True
-            return True
         else:
-            if move.notation == "O-O-O":
-                move.is_queen_castling = True
-                return True
-        return False
+            move.is_king_castling = False
+        if move.notation == "O-O-O":
+            move.is_queen_castling = True
+        else:
+            move.is_queen_castling = False
+
+        return move.is_king_castling or move.is_queen_castling
 
     def _get_piece_type(self, letter):
         return {
@@ -116,11 +122,11 @@ class ChessFile(object):
             notation_str += self._startTagLine
 
         line = self.file.readline()
-        if self._eof or line == "":
+        if self._eof or not len(line):
             raise StopIteration
 
         while 1:
-            if line == "":
+            if not len(line):
                 self._eof = True
                 break
             else:

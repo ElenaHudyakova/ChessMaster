@@ -124,3 +124,9 @@ class Move(Base):
             return 0
         else:
             return 1
+
+    def __str__(self):
+        if int(self.color) == Color.WHITE:
+            return str(self.fullmove_number) + '. ' + self.notation
+        else:
+            return str(self.fullmove_number) + '...   ' + self.notation

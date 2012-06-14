@@ -20,12 +20,13 @@ class Game(Base):
     round = Column(String, default = '')
 
     def __init__(self):
-        self.moves = list()
-        self.board_states = list()
+        self.moves = []
+        self.board_states = []
 
     def simulate(self):
         initial_setup = BoardState()
         initial_setup.make_initial_setup()
+        self.board_states = []
         self.board_states.append(initial_setup)
         for i in range(len(self.moves)):
             try:
@@ -52,6 +53,8 @@ class Game(Base):
             return 1
         return 0
 
+    def __str__(self):
+        return 'id %s: %s, %s, %s, %s-%s, %s, round %s ' % (str(self.id), self.event, self.site, self.date, self.white, self.black, self.result, self.round)
 
 class BoardState(object):
     def __init__(self):

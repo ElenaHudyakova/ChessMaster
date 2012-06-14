@@ -1,8 +1,10 @@
 from sqlalchemy.engine import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, joinedload
+from game.common import Move
 from game.game_exceptions import MoveSavingException
 from game.game_module import Game
+from parsing.parsing_module import MoveParser
 
 Base = declarative_base()
 
@@ -26,15 +28,24 @@ class Storage(object):
         return game.id
 
     def read_game(self, id):
-        game = Game()
         game = self.session.query(Game).get(id)
+        game.moves = list(self.read_moves(id))
         return game
 
     def read_all_games(self):
-        return self.session.query(Game).all()
+        games = self.session.query(Game).all()
+        for i in range(len(games)):
+            games[i].moves = list(self.read_moves(games[i].id))
+        return games
 
     def read_games(self):
         pass
+
+    def read_moves(self, game_id):
+        moves = self.session.query(Move).filter(Move.game_id == game_id).all()
+        for i in range(len(moves)):
+            moves[i] = MoveParser().parse(input_move=moves[i])
+        return moves
 
     def _save_move(self, move, game_id, board_state):
         move.game_id = game_id
