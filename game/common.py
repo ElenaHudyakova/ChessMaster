@@ -48,21 +48,18 @@ class Square(object):
 
     @staticmethod
     def digit_to_file(digit):
-        try:
-            file = {
-                1: lambda: 'a',
-                2: lambda: 'b',
-                3: lambda: 'c',
-                4: lambda: 'd',
-                5: lambda: 'e',
-                6: lambda: 'f',
-                7: lambda: 'g',
-                8: lambda: 'h',
-                None: lambda: 'None'
-            }[digit]()
-        except :
-            pass
-        return file
+        return  {
+            1: lambda: 'a',
+            2: lambda: 'b',
+            3: lambda: 'c',
+            4: lambda: 'd',
+            5: lambda: 'e',
+            6: lambda: 'f',
+            7: lambda: 'g',
+            8: lambda: 'h',
+            None: lambda: 'None'
+        }[digit]()
+
 
     def __str__(self):
         file = self.digit_to_file(self.file)

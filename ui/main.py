@@ -1,6 +1,9 @@
+import random
 import sys
 from PyQt4 import QtCore, QtGui
+import math
 from game.common import Square, PieceType, Color
+from game.game_exceptions import InvalidSquareCoordException
 from game.game_module import BoardState, Game
 from parsing.parsing_module import ChessFile
 from storage.storage_module import Storage
@@ -37,6 +40,7 @@ class BoardScene(QtGui.QGraphicsScene):
         super(BoardScene, self).__init__()
         self.piece_images = []
         self.painted_squares = []
+        self.path = []
         self.initUI()
 
     def _get_image_filename(self, piece):
@@ -114,10 +118,65 @@ class BoardScene(QtGui.QGraphicsScene):
                     piece_img.setZValue(2.0)
                     self.piece_images.append(piece_img)
 
+    def _remove_path(self):
+        for line in self.path:
+            self.removeItem(line)
+        self.path = []
+
+    def mouseDoubleClickEvent(self, event):
+        x = event.lastScenePos().x()
+        y = event.lastScenePos().y()
+        file = math.floor(x/40)
+        rank = 9 - math.floor(y/40)
+        try:
+            self._remove_path()
+            self._show_path(Square(int(file), int(rank)))
+        except InvalidSquareCoordException as err:
+            pass
+
+
+    def _show_path(self, square):
+        if self.board_state[square] is None:
+            return
+        selected_piece = self.board_state[square]
+        pen = QtGui.QPen(QtGui.QColor(150, 50, 50))
+        pen.setWidth(3)
+
+        point_pen = QtGui.QPen(QtGui.QColor(150, 50, 50))
+        point_pen.setWidth(10)
+        point_pen.setCapStyle(QtCore.Qt.RoundCap)
+
+        x1 = selected_piece.path[0].file * 40 + 20
+        y1 = (9 - selected_piece.path[0].rank) * 40 + 20
+
+        line = QtGui.QGraphicsLineItem(x1-0.7, y1-0.7, x1+0.7, y1+0.7, scene = self)
+        line.setPen(point_pen)
+        line.setZValue(3.5)
+        self.path.append(line)
+
+        for point in selected_piece.path[1:]:
+            x2 = point.file * 40 + 20
+            y2 = (9 - point.rank) * 40 + 20
+
+            line = QtGui.QGraphicsLineItem(x2-0.7, y2-0.7, x2+0.7, y2+0.7, scene = self)
+            line.setPen(point_pen)
+            line.setZValue(3.5)
+            self.path.append(line)
+
+            line = QtGui.QGraphicsLineItem(x1, y1, x2, y2, scene = self)
+            line.setPen(pen)
+            line.setZValue(3.5)
+            self.path.append(line)
+
+            x1 = x2
+            y1 = y2
+
     def redraw(self, board_state):
         self.board_state = board_state
         for item in self.piece_images:
             self.removeItem(item)
+        self._remove_path()
+
         self.piece_images = []
         board_state.pieces.reverse()
         for piece in board_state.pieces:
@@ -167,12 +226,14 @@ class MainWindow(QtGui.QWidget):
             pass
         self.initUI()
 
-
-    def _show_all_games(self):
+    def _display_games(self, games):
         self.games_list.clear()
-        games = self.storage.read_all_games()
         for game in games:
             self.games_list.addItem(GameItem(game))
+
+    def _show_all_games(self):
+        games = self.storage.read_all_games(True)
+        self._display_games(games)
 
     def _import_games(self):
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Open file')
@@ -185,7 +246,8 @@ class MainWindow(QtGui.QWidget):
             while 1:
                 try:
                     game = chess_file.next()
-                    game.simulate()
+                    if not self.import_check_box.isChecked():
+                        game.simulate()
                     self.storage.save_game(game)
                     imported_games_num += 1
                 except StopIteration:
@@ -193,7 +255,8 @@ class MainWindow(QtGui.QWidget):
                 except Exception as err:
                     invalid_games_num += 1
         except :
-            pass
+            self.import_info_label.setText('Mistake in opening a file')
+
 
         self.import_info_label.setText('%d games were imported, %d games caused mistakes ' % (imported_games_num, invalid_games_num))
         self.import_info_label.move(self.SHIFT*2 + 350, 500)
@@ -225,6 +288,7 @@ class MainWindow(QtGui.QWidget):
 
     def _show_game(self):
         self.current_game = self.games_list.currentItem().content
+        self.current_game = self.storage.read_game(self.current_game.id)
         self.current_move_num  = -1
         try:
             self.current_game.simulate()
@@ -272,6 +336,15 @@ class MainWindow(QtGui.QWidget):
                 self.current_move_num -= 1
                 self.move_list.setCurrentRow(self.current_move_num)
 
+    def _search_games(self):
+        event = self.event_search_edit.text()
+        site = self.site_search_edit.text()
+        date = self.date_search_edit.text()
+        white = self.white_search_edit.text()
+        black = self.black_search_edit.text()
+        games = self.storage.read_games(event, site, date, white, black)
+        self._display_games(games)
+
 
     def _create_left_block(self):
         self.games_list = QtGui.QListWidget(self)
@@ -282,13 +355,17 @@ class MainWindow(QtGui.QWidget):
 
         import_button = QtGui.QPushButton('Import PGN', self)
         import_button.resize(150, self.BUTTON_SIZE)
-        import_button.move(self.SHIFT, self.UP)
+        import_button.move(self.SHIFT, self.UP - 10)
         import_button.clicked.connect(self._import_games)
 
         export_button = QtGui.QPushButton('Export to PGN', self)
         export_button.resize(150, self.BUTTON_SIZE)
-        export_button.move(self.SHIFT + 50 + 150, self.UP)
+        export_button.move(self.SHIFT + 50 + 150, self.UP - 10)
         export_button.clicked.connect(self._export_games)
+
+        self.import_check_box = QtGui.QCheckBox('Quick import', self)
+        self.import_check_box.move(self.SHIFT, self.UP + 17)
+        self.import_check_box.setChecked(True)
 
         event_search_label = QtGui.QLabel('Event ', self)
         event_search_label.move(self.SHIFT, self.UP + 20 + self.LABEL_DIST)
@@ -325,6 +402,7 @@ class MainWindow(QtGui.QWidget):
         search_button = QtGui.QPushButton('Search', self)
         search_button.resize(150, self.BUTTON_SIZE)
         search_button.move(self.SHIFT, self.UP + 20 + self.LABEL_DIST*5 + 40)
+        search_button.clicked.connect(self._search_games)
 
         all_games_button = QtGui.QPushButton('Show all games', self)
         all_games_button.resize(150, self.BUTTON_SIZE)

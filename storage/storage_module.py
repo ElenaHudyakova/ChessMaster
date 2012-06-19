@@ -20,26 +20,39 @@ class Storage(object):
     def save_game(self, game):
         self.session.add(game)
         self.session.commit()
+
         for i in range(len(game.moves)):
             try:
-                self._save_move(game.moves[i], game.id, game.board_states[i+1])
+                self._process_move(game.moves[i], game.id, game.board_states[i+1])
             except :
-                raise MoveSavingException()
+                try:
+                    self._process_move(game.moves[i], game.id, None)
+                except :
+                    raise MoveSavingException()
+        self.session.add_all(game.moves)
+        self.session.commit()
         return game.id
 
-    def read_game(self, id):
+    def read_game(self, id, is_shallow = False):
         game = self.session.query(Game).get(id)
-        game.moves = list(self.read_moves(id))
+        if not is_shallow:
+            game.moves = list(self.read_moves(id))
         return game
 
-    def read_all_games(self):
+    def read_all_games(self, is_shallow = False):
         games = self.session.query(Game).all()
+        for i in range(len(games)):
+            if not is_shallow:
+                games[i].moves = list(self.read_moves(games[i].id))
+        return games
+
+    def read_games(self, event, site, date, white, black):
+        games = self.session.query(Game).filter(Game.event.like('%' + event + '%'),
+            Game.site.like('%' + site + '%'), Game.date.like('%' + date + '%'),
+            Game.white.like('%' + white + '%'), Game.black.like('%' + black + '%'), ).all()
         for i in range(len(games)):
             games[i].moves = list(self.read_moves(games[i].id))
         return games
-
-    def read_games(self):
-        pass
 
     def read_moves(self, game_id):
         moves = self.session.query(Move).filter(Move.game_id == game_id).all()
@@ -47,12 +60,18 @@ class Storage(object):
             moves[i] = MoveParser().parse(input_move=moves[i])
         return moves
 
-    def _save_move(self, move, game_id, board_state):
+
+
+    def _process_move(self, move, game_id, board_state):
         move.game_id = game_id
-        serial = board_state.serialize()
-        move.serial0 = serial[0]
-        move.serial1 = serial[1]
-        move.serial2 = serial[2]
-        move.serial3 = serial[3]
-        self.session.add(move)
-        self.session.commit()
+        try:
+            serial = board_state.serialize()
+            move.serial0 = serial[0]
+            move.serial1 = serial[1]
+            move.serial2 = serial[2]
+            move.serial3 = serial[3]
+        except :
+            move.serial0 = 0
+            move.serial1 = 0
+            move.serial2 = 0
+            move.serial3 = 0
