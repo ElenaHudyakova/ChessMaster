@@ -107,7 +107,6 @@ class BoardScene(QtGui.QGraphicsScene):
         if piece is None:
             return
         filename = os.path.join(os.getcwd(), 'img/')
-        print filename
         if piece.type == PieceType.BISHOP:
             filename += 'bishop'
         if piece.type == PieceType.KING:
@@ -600,15 +599,6 @@ def main():
 
     app = QtGui.QApplication(sys.argv)
     main_window =  MainWindow()
-    sys.exit(app.exec_())
-
-
-if __name__ == '__main__':
-    main()
-
-def main():
-
-    app = QtGui.QApplication(sys.argv)
     sys.exit(app.exec_())
 
 
