@@ -2,7 +2,8 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.schema import ForeignKey
 from sqlalchemy.types import BIGINT, BLOB, NUMERIC
 from game_exceptions import InvalidSquareCoordException
-from storage.storage import Base, session
+from storage.common import Base
+
 
 class Color:
     WHITE = 0

@@ -1,3 +1,5 @@
+import copy
+from datetime import datetime
 import random
 import sys
 from PyQt4 import QtCore, QtGui
@@ -7,6 +9,23 @@ from game.game_exceptions import InvalidSquareCoordException
 from game.game_module import BoardState, Game
 from parsing.parsing_module import ChessFile
 from storage.storage_module import Storage
+
+class PieceItem(QtGui.QGraphicsPixmapItem):
+
+    def mousePressEvent(self, event):
+
+        if event.button() != QtCore.Qt.LeftButton:
+            event.ignore()
+            return
+
+        drag = QtGui.QDrag(event.widget())
+        drag.setPixmap(self.pixmap())
+        drag.setHotSpot(QtCore.QPoint(drag.pixmap().width()/2, 20))
+        mime = QtCore.QMimeData()
+        mime.setImageData(self.pixmap())
+        drag.setMimeData(mime)
+
+        drag.start(QtCore.Qt.MoveAction)
 
 
 class GameItem(QtGui.QListWidgetItem):
@@ -29,6 +48,7 @@ class MoveItem(QtGui.QListWidgetItem):
         else:
             self.setText(str(move))
 
+
 class BoardScene(QtGui.QGraphicsScene):
 
     def __init__(self, board_state = None):
@@ -41,7 +61,47 @@ class BoardScene(QtGui.QGraphicsScene):
         self.piece_images = []
         self.painted_squares = []
         self.path = []
+        self.acceptDrag = False
+        self.drag_num = 0
         self.initUI()
+
+    def dragEnterEvent(self, event):
+        x = event.scenePos().x()
+        y = event.scenePos().y()
+        self.dragging_piece = self.itemAt(event.scenePos())
+        file = int(math.floor(x/40))
+        rank = int(9 - math.floor(y/40))
+        self.drag_from = Square(file, rank)
+#        event.acceptProposedAction()
+
+
+    def dragMoveEvent(self, event):
+        event.acceptProposedAction()
+
+
+    def dropEvent(self, event):
+        if self.dragging_piece.__class__.__name__ != 'PieceItem':
+            return
+        x = event.scenePos().x()
+        y = event.scenePos().y()
+        file = int(math.floor(x/40))
+        rank = int(9 - math.floor(y/40))
+        try:
+            try:
+                self.drag_to = Square(file, rank)
+            except InvalidSquareCoordException:
+                self.removeItem(self.dragging_piece)
+                self.board_state.pieces.remove(self.board_state[self.drag_from])
+                return
+            if self.board_state[self.drag_to] is None:
+                if self.drag_num == 0:
+                    self.board_state = copy.deepcopy(self.board_state)
+                self.drag_num += 1
+                self.board_state[self.drag_from].square = self.drag_to
+                self.dragging_piece.setOffset(40*file, 400 - 40*rank - 40)
+        except Exception as err:
+            print err
+
 
     def _get_image_filename(self, piece):
         if piece is None:
@@ -111,17 +171,25 @@ class BoardScene(QtGui.QGraphicsScene):
                     squares[i-1][j-1].setBrush(white_brush)
                 squares[i-1][j-1].setZValue(1.0)
 
-                piece = self.board_state[Square(i, j)]
-                if not piece is None:
-                    piece_img = QtGui.QGraphicsPixmapItem(QtGui.QPixmap(self._get_image_filename(piece)), scene = self)
-                    piece_img.setOffset(40*i, 400 - 40*j - 40)
-                    piece_img.setZValue(2.0)
-                    self.piece_images.append(piece_img)
+        self._add_pieces()
 
     def _remove_path(self):
         for line in self.path:
             self.removeItem(line)
         self.path = []
+
+    def _add_pieces(self):
+        self.piece_images = []
+        self.board_state.pieces.reverse()
+        for piece in self.board_state.pieces:
+    #            piece_img = QtGui.QGraphicsPixmapItem(QtGui.QPixmap(self._get_image_filename(piece)), scene = self)
+            piece_img = PieceItem(QtGui.QPixmap(self._get_image_filename(piece)), scene = self)
+            piece_img.setOffset(40*piece.square.file, 400 - 40*piece.square.rank - 40)
+            piece_img.setZValue(2.0)
+            piece_img.setAcceptDrops(True)
+            self.piece_images.append(piece_img)
+
+
 
     def mouseDoubleClickEvent(self, event):
         x = event.lastScenePos().x()
@@ -173,18 +241,11 @@ class BoardScene(QtGui.QGraphicsScene):
 
     def redraw(self, board_state):
         self.board_state = board_state
+        self.drag_num = 0
         for item in self.piece_images:
             self.removeItem(item)
         self._remove_path()
-
-        self.piece_images = []
-        board_state.pieces.reverse()
-        for piece in board_state.pieces:
-            piece_img = QtGui.QGraphicsPixmapItem(QtGui.QPixmap(self._get_image_filename(piece)), scene = self)
-            piece_img.setOffset(40*piece.square.file, 400 - 40*piece.square.rank - 40)
-            piece_img.setZValue(2.0)
-            self.piece_images.append(piece_img)
-
+        self._add_pieces()
         self._draw_move()
 
     def _draw_move(self):
@@ -236,27 +297,29 @@ class MainWindow(QtGui.QWidget):
         self._display_games(games)
 
     def _import_games(self):
+        start_timestamp = datetime.now()
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Open file')
         if not filename:
             return
         imported_games_num = 0
         invalid_games_num = 0
-        try:
-            chess_file = ChessFile(filename)
-            while 1:
-                try:
-                    game = chess_file.next()
-                    if not self.import_check_box.isChecked():
-                        game.simulate()
-                    self.storage.save_game(game)
-                    imported_games_num += 1
-                except StopIteration:
-                    break
-                except Exception as err:
-                    invalid_games_num += 1
-        except :
-            self.import_info_label.setText('Mistake in opening a file')
+        chess_file = ChessFile(filename)
+        is_quick_import = self.import_check_box.isChecked()
+        while 1:
+            try:
+                game = chess_file.next()
+                if not is_quick_import:
+                    game.simulate()
+                self.storage.save_game(game)
+                imported_games_num += 1
+            except StopIteration:
+                break
+            except Exception as err:
+                print err
+                invalid_games_num += 1
 
+        end_timestamp = datetime.now()
+        print (end_timestamp - start_timestamp).total_seconds()
 
         self.import_info_label.setText('%d games were imported, %d games caused mistakes ' % (imported_games_num, invalid_games_num))
         self.import_info_label.move(self.SHIFT*2 + 350, 500)
@@ -316,8 +379,16 @@ class MainWindow(QtGui.QWidget):
 
     def _show_first_move(self):
         if not self.current_game is None:
-            self.current_move_num = 0
-            self.move_list.setCurrentRow(self.current_move_num)
+            try:
+                self.current_move_num = 0
+                self.move_list.setCurrentRow(self.current_move_num)
+                self.board.redraw(self.current_game.board_states[self.current_move_num])
+            except Exception as err:
+                print err
+        else:
+            board_state = BoardState()
+            board_state.make_initial_setup()
+            self.board.redraw(board_state)
 
     def _show_last_move(self):
         if not self.current_game is None:
@@ -342,9 +413,22 @@ class MainWindow(QtGui.QWidget):
         date = self.date_search_edit.text()
         white = self.white_search_edit.text()
         black = self.black_search_edit.text()
-        games = self.storage.read_games(event, site, date, white, black)
+        if self.board_search_check_box.isChecked():
+            board_state = self.board.board_state
+        else:
+            board_state = None
+        games = self.storage.read_games(event, site, date, white, black, board_state)
         self._display_games(games)
 
+    def _show_statistics(self):
+        self.statistics_list.clear()
+        statistics = self.storage.get_staticstics(self.board.board_state)
+        if len(statistics) == 0:
+            self.statistics_list.addItem('No games found')
+        for statistics_item in statistics:
+            self.statistics_list.addItem(statistics_item.move_notation + '\t'
+                                         + str(statistics_item.number) + '\t'
+                                         + str(round(statistics_item.white_win, 2)) + '%')
 
     def _create_left_block(self):
         self.games_list = QtGui.QListWidget(self)
@@ -404,6 +488,12 @@ class MainWindow(QtGui.QWidget):
         search_button.move(self.SHIFT, self.UP + 20 + self.LABEL_DIST*5 + 40)
         search_button.clicked.connect(self._search_games)
 
+
+        self.board_search_check_box = QtGui.QCheckBox('Board state search', self)
+        self.board_search_check_box.move(self.SHIFT, self.UP + 20 + self.LABEL_DIST*5 + 40 + 27)
+        self.board_search_check_box.setChecked(False)
+
+
         all_games_button = QtGui.QPushButton('Show all games', self)
         all_games_button.resize(150, self.BUTTON_SIZE)
         all_games_button.move(self.SHIFT + 50 + 150, self.UP + 20 + self.LABEL_DIST*5 + 40)
@@ -412,6 +502,7 @@ class MainWindow(QtGui.QWidget):
     def _create_central_block(self):
         self.board = BoardScene()
         self.chess_board = QtGui.QGraphicsView(self.board, parent = self)
+        self.chess_board.setAcceptDrops(True)
         self.chess_board.resize(402, 402)
         self.chess_board.move(self.SHIFT + 350 + self.SHIFT, self.SHIFT)
 
@@ -478,6 +569,8 @@ class MainWindow(QtGui.QWidget):
         get_statistics_button = QtGui.QPushButton('Get move statistics', self)
         get_statistics_button.resize(250, self.BUTTON_SIZE)
         get_statistics_button.move(self.SHIFT*3 + 350 + 400, self.SHIFT + 320)
+        get_statistics_button.clicked.connect(self._show_statistics)
+
 
         self.statistics_list = QtGui.QListWidget(self)
         self.statistics_list.resize(250, 180)

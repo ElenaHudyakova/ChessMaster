@@ -5,7 +5,7 @@ from common import Color, Square, PieceType
 from game_exceptions import InvalidGameException
 from pieces import PieceCreator
 from game_exceptions import InvalidBoardSquare, ImpossibleMoveException
-from storage.storage import session, Base
+from storage.common import Base
 
 class Game(Base):
     __tablename__ = 'games'

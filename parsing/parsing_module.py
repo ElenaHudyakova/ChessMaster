@@ -85,7 +85,7 @@ class ChessFile(object):
         line = line.strip()
         move_number = 0
         for move_pair in re.split("\d+\.", line):
-            if move_pair!="":
+            if move_pair:
                 move_pair = move_pair.strip()
                 for move_str in re.split("\s+", move_pair):
                         if move_str == '1-0' or move_str == '0-1' or move_str == '1/2-1/2':
