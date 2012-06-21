@@ -319,9 +319,9 @@ class MainWindow(QtGui.QWidget):
                 invalid_games_num += 1
 
         end_timestamp = datetime.now()
-        print (end_timestamp - start_timestamp).total_seconds()
+        time = (end_timestamp - start_timestamp).total_seconds()
 
-        self.import_info_label.setText('%d games were imported, %d games caused mistakes ' % (imported_games_num, invalid_games_num))
+        self.import_info_label.setText('%d games were imported, %d games caused mistakes (%.2f sec)' % (imported_games_num, invalid_games_num, time))
         self.import_info_label.move(self.SHIFT*2 + 350, 500)
 
         self._show_all_games()
