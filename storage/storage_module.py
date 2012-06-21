@@ -21,6 +21,10 @@ class Storage(object):
         self.session.commit()
 
         is_quick_import = len(game.board_states)
+
+        if len(game.moves) == 0:
+            return
+
         for i in range(len(game.moves)):
             if is_quick_import:
                 self._process_move(game.moves[i], game.id, game.board_states[i+1])

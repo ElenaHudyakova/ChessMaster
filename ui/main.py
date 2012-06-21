@@ -1,12 +1,12 @@
 import copy
 from datetime import datetime
-import random
+import os
 import sys
 from PyQt4 import QtCore, QtGui
 import math
 from game.common import Square, PieceType, Color
 from game.game_exceptions import InvalidSquareCoordException
-from game.game_module import BoardState, Game
+from game.game_module import BoardState
 from parsing.parsing_module import ChessFile
 from storage.storage_module import Storage
 
@@ -106,7 +106,7 @@ class BoardScene(QtGui.QGraphicsScene):
     def _get_image_filename(self, piece):
         if piece is None:
             return
-        filename = 'img/'
+        filename = os.path.join(os.getcwd(), 'ui/img/')
         if piece.type == PieceType.BISHOP:
             filename += 'bishop'
         if piece.type == PieceType.KING:
@@ -182,7 +182,6 @@ class BoardScene(QtGui.QGraphicsScene):
         self.piece_images = []
         self.board_state.pieces.reverse()
         for piece in self.board_state.pieces:
-    #            piece_img = QtGui.QGraphicsPixmapItem(QtGui.QPixmap(self._get_image_filename(piece)), scene = self)
             piece_img = PieceItem(QtGui.QPixmap(self._get_image_filename(piece)), scene = self)
             piece_img.setOffset(40*piece.square.file, 400 - 40*piece.square.rank - 40)
             piece_img.setZValue(2.0)
