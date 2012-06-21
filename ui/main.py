@@ -106,7 +106,8 @@ class BoardScene(QtGui.QGraphicsScene):
     def _get_image_filename(self, piece):
         if piece is None:
             return
-        filename = os.path.join(os.getcwd(), 'img/')
+        filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..%simg' % os.sep)
+        filename += os.sep
         if piece.type == PieceType.BISHOP:
             filename += 'bishop'
         if piece.type == PieceType.KING:
