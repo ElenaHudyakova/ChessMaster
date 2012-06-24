@@ -417,7 +417,7 @@ class GameTestCase(unittest.TestCase):
         move = Move()
         move.is_queen_castling = False
         move.is_king_castling = True
-        move.color = Color.WHITE
+        move.color = Color.BLACK
         board = board.next(move)
         self.assertEqual(PieceType.KING, board[('g', 8)].type)
 
@@ -541,9 +541,10 @@ class GameTestCase(unittest.TestCase):
 
     def test_many_pieces_to_move(self):
         board = BoardState()
-        board.add_piece(PieceCreator().create_piece(PieceType.ROOK, Square('d', 5), Color.BLACK))
-        board.add_piece(PieceCreator().create_piece(PieceType.BISHOP, Square('f', 7), Color.BLACK))
-        self.assertRaises(ImpossibleMoveException, board.next, Move('h5', Color.BLACK))
+        board.active_color = Color.BLACK
+        board.add_piece(PieceCreator().create_piece(PieceType.KNIGHT, Square('b', 1), Color.WHITE))
+        board.add_piece(PieceCreator().create_piece(PieceType.KNIGHT, Square('e', 2), Color.WHITE))
+        self.assertRaises(ImpossibleMoveException, board.next, MoveParser().parse('Nc3', Color.WHITE))
 
     def test_exception_during_game_simulation(self):
         game = Game()

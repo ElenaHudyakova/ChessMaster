@@ -60,24 +60,34 @@ class PieceCreator(object):
         return Piece(self._get_motion_strategy(type), type, piece.square, piece.color)
 
 
-
-
-
-
 class MotionStrategy(object):
     def _can_move(self, piece, to_square, board_state = None):
         raise NotImplementedError()
 
+    def _will_be_check(self, piece, to_square, board_state, is_capture = False):
+        board_state_new = copy.deepcopy(board_state)
+        if is_capture:
+            board_state_new[piece.square].capture(board_state_new, to_square)
+        else:
+            board_state_new[piece.square].move(board_state_new, to_square)
+        return board_state_new.is_check(piece.color)
+
     def is_move_possible(self, piece, to_square, board_state = None):
         if not board_state is None:
-            return self._can_move(piece, to_square, board_state) and (board_state[(to_square.file, to_square.rank)] is None)
+            if self._can_move(piece, to_square, board_state) and (board_state[(to_square.file, to_square.rank)] is None):
+                return not self._will_be_check(piece, to_square, board_state)
+            else:
+                return False
         else:
             return self._can_move(piece, to_square)
 
     def is_capture_possible(self, piece, to_square, board_state = None):
         if not board_state is None:
-            return self._can_move(piece, to_square, board_state) and not (board_state[(to_square.file, to_square.rank)] is None)\
-                and board_state[(to_square.file, to_square.rank)].color != piece.color
+            if self._can_move(piece, to_square, board_state) and not (board_state[(to_square.file, to_square.rank)] is None)\
+                and board_state[(to_square.file, to_square.rank)].color != piece.color:
+                return not self._will_be_check(piece, to_square, board_state, is_capture=True)
+            else:
+                return False
         else:
             return self._can_move(piece, to_square)
 
@@ -138,22 +148,28 @@ class PawnMotionStrategy(MotionStrategy):
 
     def _can_en_passant(self, piece, to_square, board_state):
         if not board_state.en_passant_target_square is None:
-            return to_square == board_state.en_passant_target_square
+            return (to_square == board_state.en_passant_target_square) and (self._can_capture(piece, to_square))
         else:
             return False
 
     def is_move_possible(self, piece, to_square, board_state = None):
         if not board_state is None:
-            return (self._can_move(piece, to_square, board_state) and (board_state[(to_square.file, to_square.rank)] is None))\
-                or self._can_en_passant(piece, to_square, board_state)
+            if (self._can_move(piece, to_square, board_state) and (board_state[(to_square.file, to_square.rank)] is None))\
+                or self._can_en_passant(piece, to_square, board_state):
+                return not self._will_be_check(piece, to_square, board_state)
+            else:
+                return False
         else:
             return self._can_move(piece, to_square)
 
     def is_capture_possible(self, piece, to_square, board_state = None):
         if not board_state is None:
-            return (self._can_capture(piece, to_square) and not (board_state[(to_square.file, to_square.rank)] is None)
+            if (self._can_capture(piece, to_square) and not (board_state[(to_square.file, to_square.rank)] is None)
             and board_state[(to_square.file, to_square.rank)].color != piece.color) \
-            or (self._can_en_passant(piece, to_square, board_state))
+            or (self._can_en_passant(piece, to_square, board_state)):
+                return not self._will_be_check(piece, to_square, board_state)
+            else:
+                return False
         else:
             return self._can_capture(piece, to_square)
 
@@ -179,6 +195,12 @@ class PawnMotionStrategy(MotionStrategy):
         self._set_en_passant_target_square(board_state, piece, to_square)
         board_state[piece.square].square = to_square
 
+    def make_capture(self, board_state, piece, to_square):
+        try:
+            self._make_en_passant_capture(board_state, piece, to_square)
+        except ImpossibleMoveException:
+            board_state.pieces.remove(board_state[to_square])
+        board_state[piece.square].square = to_square
 
 class KnightMotionStrategy(MotionStrategy):
     def _can_move(self, piece, to_square, board_state = None):

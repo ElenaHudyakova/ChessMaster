@@ -111,6 +111,7 @@ class Move(Base):
         self.from_square = None
         self.is_capture = False
         self.is_check = False
+        self.is_checkmate = False
         self.is_promotion = False
         self.promotion_piece_type = PieceType.NONE
         self.is_king_castling = False

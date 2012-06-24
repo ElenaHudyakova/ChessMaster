@@ -31,8 +31,8 @@ class Game(Base):
         for i in range(len(self.moves)):
             try:
                 self.board_states.append(self.board_states[i].next(self.moves[i]))
-            except :
-                raise InvalidGameException('Error in the simulation on the %s halfmove' % str(i+1))
+            except ImpossibleMoveException as err:
+                raise InvalidGameException(err.message)
 
     def __cmp__(self, other):
         if self.event != other.event:
@@ -96,6 +96,21 @@ class BoardState(object):
 
     def __len__(self):
         return len(self.pieces)
+
+    def is_check(self, color):
+        king_square = None
+        for piece in self.pieces:
+            if piece.type == PieceType.KING and piece.color == color:
+                king_square = piece.square
+                break
+        if king_square is None:
+            return False
+        if self.square_is_under_attack(king_square):
+            return True
+        else:
+            return False
+
+
 
 
     def can_kingside_castling(self):
@@ -194,8 +209,12 @@ class BoardState(object):
         else:
             moving_piece = suitable_pieces[0]
 
+
         if move.is_capture:
-            moving_piece.capture(self, move.to_square)
+            try:
+                moving_piece.capture(self, move.to_square)
+            except :
+                raise InvalidGameException(move)
         else:
             moving_piece.move(self, move.to_square)
 
@@ -232,6 +251,9 @@ class BoardState(object):
             new_board.fullmove_number += 1
             new_board.active_color = Color.WHITE
 
+        if move.color != new_board.active_color:
+            raise ImpossibleMoveException('Board active color and move color are not the same')
+
         new_board.moving_pieces = []
 
         if not self.is_en_passant_for_next is None:
@@ -244,13 +266,13 @@ class BoardState(object):
             if new_board.can_kingside_castling():
                 new_board._set_kingside_castling()
             else:
-                raise ImpossibleMoveException(move.notation)
+                raise ImpossibleMoveException('Impossible kingside castling')
 
         if move.is_queen_castling:
             if new_board.can_queenside_castling():
                 new_board._set_queenside_castling()
             else:
-                raise ImpossibleMoveException(move.notation)
+                raise ImpossibleMoveException('Impossible queenside castling')
 
         if not move.is_king_castling and not move.is_queen_castling:
                 new_board._set_regular_move(move)

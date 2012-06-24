@@ -5,7 +5,7 @@ import sys
 from PyQt4 import QtCore, QtGui
 import math
 from game.common import Square, PieceType, Color
-from game.game_exceptions import InvalidSquareCoordException
+from game.game_exceptions import InvalidSquareCoordException, InvalidGameException
 from game.game_module import BoardState
 from parsing.parsing_module import ChessFile
 from storage.storage_module import Storage
@@ -297,16 +297,21 @@ class MainWindow(QtGui.QWidget):
         self._display_games(games)
 
     def _import_games(self):
-        start_timestamp = datetime.now()
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Open file')
         if not filename:
             return
+
+        self.info_block.addItem('New import:')
+        start_timestamp = datetime.now()
+
         imported_games_num = 0
         invalid_games_num = 0
+        games_num = 0
         chess_file = ChessFile(filename)
         is_quick_import = self.import_check_box.isChecked()
         while 1:
             try:
+                games_num += 1
                 game = chess_file.next()
                 if not is_quick_import:
                     game.simulate()
@@ -314,15 +319,14 @@ class MainWindow(QtGui.QWidget):
                 imported_games_num += 1
             except StopIteration:
                 break
-            except Exception as err:
-                print err
+            except InvalidGameException as err:
+                self.info_block.addItem('ERROR in %d game in file: %s' % (games_num, err.message))
                 invalid_games_num += 1
 
         end_timestamp = datetime.now()
         time = (end_timestamp - start_timestamp).total_seconds()
 
-        self.import_info_label.setText('%d games were imported, %d games caused mistakes (%.2f sec)' % (imported_games_num, invalid_games_num, time))
-        self.import_info_label.move(self.SHIFT*2 + 350, 500)
+        self.info_block.addItem('\t%d games were imported, %d games caused mistakes (%.2f sec)' % (imported_games_num, invalid_games_num, time))
 
         self._show_all_games()
 
@@ -345,8 +349,7 @@ class MainWindow(QtGui.QWidget):
         except :
             pass
 
-        self.import_info_label.setText('%d games were exported, %d games caused mistakes ' % (exported_games_num, invalid_games_num))
-        self.import_info_label.move(self.SHIFT*2 + 350, 500)
+        self.info_block.addItem('%d games were exported, %d games caused mistakes ' % (exported_games_num, invalid_games_num))
 
 
     def _show_game(self):
@@ -526,9 +529,9 @@ class MainWindow(QtGui.QWidget):
         last_move_button.move(self.SHIFT*2 + 350 + 15 + 300, self.SHIFT + 400 + 20)
         last_move_button.clicked.connect(self._show_last_move)
 
-        self.import_info_label = QtGui.QLabel('No import yet', self)
-        self.import_info_label.move(self.SHIFT*2 + 350, 500)
-        self.import_info_label.resize(400, 30)
+        self.info_block = QtGui.QListWidget(self)
+        self.info_block.resize(400, 100)
+        self.info_block.move(self.SHIFT*2 + 350, 520)
 
 
     def _create_right_block(self):

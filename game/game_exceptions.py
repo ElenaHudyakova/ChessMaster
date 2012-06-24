@@ -3,12 +3,10 @@ class InvalidSquareCoordException(Exception):
         super(Exception, self).__init__(str(value) + ' for ' + str(coord))
 
 class ImpossibleMoveException(Exception):
-    def __init__(self, notation):
-        super(Exception, self).__init__(notation)
+    pass
 
 class InvalidMoveRecordException(Exception):
-    def __init__(self, notation):
-        super(Exception, self).__init__(notation)
+    pass
 
 class InvalidBoardSquare(Exception):
     pass

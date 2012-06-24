@@ -1,6 +1,6 @@
 
 Иструкция по сборке проекта ChessMaster (Windows 7, 32-разрядная, MySQL установлен)
-0. Загрузить из репозитория последнюю версию
+0. Загрузить из репозитория последнюю версию проекта
 1. Скачать Python 2.7.3 ﻿http://www.python.org/ftp/python/2.7.3/python-2.7.3.msi
    Запустить, при установке оставляем всё по умолчанию
 2. Скачать easy_install ﻿http://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11.win32-py2.7.exe#md5=57e1e64f6b7c7f1d2eddfc9746bbaf20

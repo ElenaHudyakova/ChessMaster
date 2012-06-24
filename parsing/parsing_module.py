@@ -1,3 +1,4 @@
+import copy
 import re
 from game.common import Square, PieceType, Move, Color
 from game.game_exceptions import InvalidMoveRecordException, InvalidGameException
@@ -14,20 +15,22 @@ class MoveParser(object):
         is_castling = self._parse_castling_move(move)
         if not is_castling:
             try:
-                m = re.match(r"^(?P<piece>[BRKQN]?)(?P<from_file>[a-h]?)(?P<from_rank>[1-8]?)(?P<is_capture>x?)(?P<to_file>[a-h])(?P<to_rank>[1-8])((?P<is_promotion>=)(?P<promotion_piece_type>[BRKQN]))?(?P<is_check>\+?)$", move.notation)
+                m = re.match(r"^(?P<piece>[BRKQN]?)(?P<from_file>[a-h]?)(?P<from_rank>[1-8]?)(?P<is_capture>x?)(?P<to_file>[a-h])(?P<to_rank>[1-8])((?P<is_promotion>=)(?P<promotion_piece_type>[BRKQN]))?(?P<is_check>\+?)?(?P<is_checkmate>#?)$", move.notation)
                 move.piece_type = self._get_piece_type(m.group("piece"))
                 move.to_square = Square(m.group("to_file"), int(m.group("to_rank")))
                 try:
-                    move.from_square = Square(m.group("from_file"), int(m.group("from_rank")))
+                    from_rank = int(m.group("from_rank"))
                 except :
-                    move.from_square = Square(m.group("from_file"), None)
+                    from_rank = None
+                move.from_square = Square(m.group("from_file"), from_rank)
                 move.is_capture = m.group("is_capture") == "x"
                 move.is_check = m.group("is_check") == "+"
+                move.is_checkmate = m.group("is_checkmate") == "#"
                 move.is_promotion = m.group("is_promotion") == "="
                 if move.is_promotion:
                     move.promotion_piece_type = self._get_piece_type(m.group("promotion_piece_type"))
             except Exception as err:
-                raise InvalidMoveRecordException(move.notation)
+                raise InvalidMoveRecordException('Invalid move record')
         return move
 
 
@@ -80,10 +83,7 @@ class ChessFile(object):
         line = line[1:-1]
         tag_name, tag_value = line.split(" ", 1)
         tag_value = tag_value[1:-1]
-        try:
-            setattr(game, tag_name.lower(), tag_value)
-        except :
-            pass
+        setattr(game, tag_name.lower(), tag_value)
 
     def _parse_moves(self, line, game):
         line = line.strip()
@@ -92,24 +92,33 @@ class ChessFile(object):
             if move_pair:
                 move_pair = move_pair.strip()
                 for move_str in re.split("\s+", move_pair):
-                        if move_str == '1-0' or move_str == '0-1' or move_str == '1/2-1/2':
+                        if move_str == '1-0' or move_str == '0-1' or move_str == '1/2-1/2' or move_str == '*':
                             break
-                        move = MoveParser().parse(move_str)
+                        move = Move()
                         if move_number % 2 == 0:
-                            move.color = Color.WHITE
+                            color = Color.WHITE
                         else:
-                            move.color = Color.BLACK
-                        move.fullmove_number = move_number/2 + 1
+                            color = Color.BLACK
+                        fullmove_number = move_number/2 + 1
+                        try:
+                            move = MoveParser().parse(move_str, move)
+                            move.color = color
+                            move.fullmove_number = fullmove_number
+                        except InvalidMoveRecordException as err:
+                            raise InvalidGameException('Move %d. %s %s' % (fullmove_number, move_str, err.message))
                         game.moves.append(move)
                         move_number += 1
 
 
     def _parse_game(self, notation_str, game):
         notation_str = notation_str.replace("\n", " ")
-        while "]" in notation_str:
-            tag_line = notation_str.split("]", 1)[0] + "]"
-            notation_str = notation_str.split("]", 1)[1]
-            self._parse_tag(tag_line, game)
+        try:
+            while "]" in notation_str:
+                tag_line = notation_str.split("]", 1)[0] + "]"
+                notation_str = notation_str.split("]", 1)[1]
+                self._parse_tag(tag_line, game)
+        except Exception:
+            raise InvalidGameException('Invalid tag record')
         self._parse_moves(notation_str, game)
 
     def init(self):
@@ -141,10 +150,7 @@ class ChessFile(object):
                     notation_str += line
             line = self.file.readline()
 
-        try:
-            self._parse_game(notation_str, game)
-        except InvalidMoveRecordException:
-            raise InvalidGameException()
+        self._parse_game(notation_str, game)
 
         return game
 
