@@ -7,7 +7,7 @@ __author__ = 'Lena'
 
 import unittest
 
-class MyTestCase(unittest.TestCase):
+class StorageTestCase(unittest.TestCase):
 
     path = os.path.dirname(__file__)
 
@@ -38,7 +38,6 @@ class MyTestCase(unittest.TestCase):
         id = storage.save_game(game)
         game_number2 = len(storage.read_all_games())
         self.assertEqual(game_number1 + 1, game_number2)
-
 
 if __name__ == '__main__':
     unittest.main()

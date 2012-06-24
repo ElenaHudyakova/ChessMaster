@@ -6,7 +6,7 @@ from game.pieces import PieceCreator, PieceType
 from parsing.parsing_module import MoveParser
 
 
-class MyTestCase(unittest.TestCase):
+class GameTestCase(unittest.TestCase):
 
     def test_impossible_square_file(self):
         self.assertRaises(InvalidSquareCoordException, Square, 't', 4)
@@ -414,7 +414,11 @@ class MyTestCase(unittest.TestCase):
         board = BoardState()
         board.add_piece(PieceCreator().create_piece(PieceType.KING, Square('e', 8), Color.BLACK))
         board.add_piece(PieceCreator().create_piece(PieceType.ROOK, Square('h', 8), Color.BLACK))
-        board = board.next(MoveParser().parse("O-O", Color.BLACK))
+        move = Move()
+        move.is_queen_castling = False
+        move.is_king_castling = True
+        move.color = Color.WHITE
+        board = board.next(move)
         self.assertEqual(PieceType.KING, board[('g', 8)].type)
 
     def test_queenside_castling_impossible(self):
@@ -423,7 +427,11 @@ class MyTestCase(unittest.TestCase):
         rook = PieceCreator().create_piece(PieceType.ROOK, Square('a', 7), Color.BLACK)
         board.add_piece(king)
         board.add_piece(rook)
-        self.assertRaises(ImpossibleMoveException, board.next, MoveParser().parse("O-O-O", Color.BLACK))
+        move = Move()
+        move.is_queen_castling = False
+        move.is_king_castling = True
+        move.color = Color.BLACK
+        self.assertRaises(ImpossibleMoveException, board.next, move)
 
     def test_queenside_castling_move(self):
         board = BoardState()
@@ -550,7 +558,6 @@ class MyTestCase(unittest.TestCase):
         path2 = board[('a', 4)].path
         self.assertEqual([Square('a',2)], path1)
         self.assertEqual([Square('a',2), Square('a', 4)], path2)
-
 
 if __name__ == '__main__':
     unittest.main()

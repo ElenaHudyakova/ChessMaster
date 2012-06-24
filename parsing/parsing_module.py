@@ -58,13 +58,17 @@ class ChessFile(object):
     START_TAG = "Event"
 
     def __init__(self, filename):
-        try:
-            self.file = open(filename)
-        except IOError:
-            self.file = open(filename, "w")
-            self.file = open(filename, 'r')
+        if isinstance(filename, file):
+            self.file = filename
+            self.filename = filename.name
+        else:
+            try:
+                self.file = open(filename)
+            except IOError:
+                self.file = open(filename, "w")
+                self.file = open(filename, 'r')
+            self.filename = filename
 
-        self.filename = filename
         self._eof = False
         self._startTagLine = None
 

@@ -1,5 +1,7 @@
 import os
 import sys
+from tempfile import NamedTemporaryFile
+import uuid
 from game.common import Move, PieceType, Square, Color
 from game.game_exceptions import InvalidMoveRecordException, InvalidGameException
 from parsing.parsing_module import MoveParser, ChessFile
@@ -8,7 +10,7 @@ __author__ = 'Lena'
 
 import unittest
 
-class MyTestCase(unittest.TestCase):
+class ParsingTestCase(unittest.TestCase):
 
     path = os.path.dirname(__file__)
 
@@ -73,17 +75,14 @@ class MyTestCase(unittest.TestCase):
         self.assertRaises(InvalidMoveRecordException, MoveParser().parse, 'Bxc6Rxa5')
 
     def test_no_file(self):
-        filename = os.path.join(self.path, "test_files/no_file.pgn")
-        test_file = ChessFile(filename)
+        file = NamedTemporaryFile(delete=False)
+        test_file = ChessFile(file.name + uuid.uuid4().hex[:16])
         self.assertRaises(StopIteration, test_file.next)
-        os.unlink(filename)
 
     def test_empty_file(self):
-        filename = os.path.join(self.path, "test_files/empty.pgn")
-        self.create_file(filename, "")
-        test_file = ChessFile(filename)
+        file = NamedTemporaryFile(delete=False)
+        test_file = ChessFile(file.name)
         self.assertRaises(StopIteration, test_file.next)
-        os.remove(filename)
 
     def test_parse_one_game_file(self):
         filename = os.path.join(self.path, "test_files/one_game.pgn")
@@ -160,6 +159,8 @@ class MyTestCase(unittest.TestCase):
     def test_add_game_to_file(self):
         filename1 = os.path.join(self.path, "test_files/two_games.pgn")
         filename2 = os.path.join(self.path, "test_files/new_file.pgn")
+        file = open(filename2, 'w')
+        file.close()
         test_file1 = ChessFile(filename1)
         test_file2 = ChessFile(filename2)
         game1 = test_file1.next()
@@ -171,7 +172,6 @@ class MyTestCase(unittest.TestCase):
         test_file2.next()
 
         self.assertRaises(StopIteration, test_file2.next)
-        os.remove(filename2)
 
 if __name__ == '__main__':
     unittest.main()
