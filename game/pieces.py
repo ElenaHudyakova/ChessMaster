@@ -167,7 +167,7 @@ class PawnMotionStrategy(MotionStrategy):
             if (self._can_capture(piece, to_square) and not (board_state[(to_square.file, to_square.rank)] is None)
             and board_state[(to_square.file, to_square.rank)].color != piece.color) \
             or (self._can_en_passant(piece, to_square, board_state)):
-                return not self._will_be_check(piece, to_square, board_state)
+                return not self._will_be_check(piece, to_square, board_state, is_capture=True)
             else:
                 return False
         else:

@@ -281,10 +281,7 @@ class MainWindow(QtGui.QWidget):
         self.current_game = None
         self.current_move_num = None
         super(MainWindow, self).__init__()
-        try:
-            self.storage = Storage()
-        except :
-            pass
+        self.storage = Storage()
         self.initUI()
 
     def _display_games(self, games):
@@ -425,7 +422,7 @@ class MainWindow(QtGui.QWidget):
 
     def _show_statistics(self):
         self.statistics_list.clear()
-        statistics = self.storage.get_staticstics(self.board.board_state)
+        statistics = self.storage.get_statistics(self.board.board_state)
         if len(statistics) == 0:
             self.statistics_list.addItem('No games found')
         for statistics_item in statistics:

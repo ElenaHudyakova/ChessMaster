@@ -1,3 +1,4 @@
+import MySQLdb
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import sessionmaker
 from game.common import Move
@@ -6,80 +7,21 @@ from game.game_module import Game
 from parsing.parsing_module import MoveParser
 from storage.common import StatisticsItem
 
-
-class Storage(object):
-
-    def __init__(self, host = 'localhost', port = '3306', login = 'root', password = '123', db_name = 'chess'):
-#        engine = create_engine('mysql+mysqldb://root:123@localhost:3306/chess', echo=True)
-        self.engine = create_engine('mysql+mysqldb://%s:%s@%s:%s/%s' % (login, password, host, port, db_name), echo=False)
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
-
-
+class StorageBase(object):
     def save_game(self, game):
-        self.session.add(game)
-        self.session.commit()
-
-        is_quick_import = len(game.board_states)
-
-        if len(game.moves) == 0:
-            return
-
-        for i in range(len(game.moves)):
-            if is_quick_import:
-                self._process_move(game.moves[i], game.id, game.board_states[i+1])
-            else:
-                self._process_move(game.moves[i], game.id, None)
-
-        query = "), (".join(["%d, '%s', %d, %d, %d, %d, %d, %d" % (move.game_id, move.notation, move.fullmove_number, move.color, move.serial0, move.serial1, move.serial2, move.serial3) for move in game.moves])
-
-        query = "INSERT INTO moves (`game_id`, `notation`, `fullmove_number`, `color`, `serial0`, `serial1`, `serial2`, `serial3`) VALUES (%s)" % query
-        self.engine.execute(query)
-        self.session.expire_all()
-        self.session.commit()
-#        return game.id
+        raise NotImplementedError()
 
     def read_game(self, id, is_shallow = False):
-        game = self.session.query(Game).get(id)
-        if not is_shallow:
-            game.moves = list(self.read_moves(id))
-        return game
+        raise NotImplementedError()
 
     def read_all_games(self, is_shallow = False):
-        games = self.session.query(Game).all()
-        for i in range(len(games)):
-            if not is_shallow:
-                games[i].moves = list(self.read_moves(games[i].id))
-        return games
+        raise NotImplementedError()
 
     def read_games(self, event = '', site = '', date = '', white = '', black = '', board_state = None):
-        games = self.session.query(Game).filter(Game.event.like('%' + event + '%'),
-            Game.site.like('%' + site + '%'), Game.date.like('%' + date + '%'),
-            Game.white.like('%' + white + '%'), Game.black.like('%' + black + '%'), ).all()
-        for i in range(len(games)):
-            games[i].moves = list(self.read_moves(games[i].id))
-
-        result = []
-
-        if not board_state is None:
-            serial = board_state.serialize()
-            for i in range(len(games)):
-                for move in games[i].moves:
-                    if [move.serial0, move.serial1, move.serial2, move.serial3] == serial:
-                        result.append(games[i])
-                        break
-        else:
-            result = games
-
-        return result
+        pass
 
     def read_moves(self, game_id):
-        moves = self.session.query(Move).filter(Move.game_id == game_id).all()
-        for i in range(len(moves)):
-            moves[i] = MoveParser().parse(input_move=moves[i])
-        return moves
-
-
+        pass
 
     def _process_move(self, move, game_id, board_state):
         move.game_id = game_id
@@ -92,9 +34,10 @@ class Storage(object):
             move.serial2 = serial[2]
             move.serial3 = serial[3]
 
-    def get_staticstics(self, board_state):
+    def get_statistics(self, board_state):
         statistics = []
         serial = board_state.serialize()
+        next_move_notation = ''
         games = self.read_games(board_state = board_state)
         for game in games:
             is_found = False
@@ -128,3 +71,107 @@ class Storage(object):
             statistics_item.count()
 
         return statistics
+
+class Storage(StorageBase):
+
+    def __init__(self, host = 'localhost', port = '3306', login = 'root', password = '123', db_name = 'chess'):
+#        engine = create_engine('mysql+mysqldb://root:123@localhost:3306/chess', echo=True)
+        self.engine = create_engine('mysql+mysqldb://%s:%s@%s:%s/%s' % (login, password, host, port, db_name), echo=True)
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()
+        self.connection = MySQLdb.connect(host, login, password, db_name)
+
+
+    def save_game(self, game):
+        cursor = self.connection.cursor()
+        query = "INSERT INTO games (`event`, `site`, `date`, `white`, `black`, `round`, `result`) "\
+                "VALUE ('%s', '%s','%s','%s','%s','%s','%s')"\
+        % (game.event.replace("'", ""), game.site.replace("'", ""), game.date.replace("'", ""),
+           game.white.replace("'", ""), game.black.replace("'", ""), game.round.replace("'", ""), game.result.replace("'", ""))
+        cursor.execute(query)
+        game.id = self.connection.insert_id()
+
+        is_quick_import = len(game.board_states)
+
+        if len(game.moves) == 0:
+            return
+
+        for i in range(len(game.moves)):
+            if is_quick_import:
+                self._process_move(game.moves[i], game.id, game.board_states[i+1])
+            else:
+                self._process_move(game.moves[i], game.id, None)
+
+        query = "), (".join(["%d, '%s', %d, %d, %d, %d, %d, %d" % (move.game_id, move.notation, move.fullmove_number, move.color, move.serial0, move.serial1, move.serial2, move.serial3) for move in game.moves])
+
+        query = "INSERT INTO moves (`game_id`, `notation`, `fullmove_number`, `color`, `serial0`, `serial1`, `serial2`, `serial3`) VALUES (%s)" % query
+        query = query.replace("'", "\'")
+        cursor.execute(query)
+        self.connection.commit()
+
+
+    def save_game_ORM(self, game):
+        self.session.add(game)
+        self.session.commit()
+
+        is_quick_import = len(game.board_states)
+
+        if len(game.moves) == 0:
+            return
+
+        for i in range(len(game.moves)):
+            if is_quick_import:
+                self._process_move(game.moves[i], game.id, game.board_states[i+1])
+            else:
+                self._process_move(game.moves[i], game.id, None)
+
+        query = "), (".join(["%d, '%s', %d, %d, %d, %d, %d, %d" % (move.game_id, move.notation, move.fullmove_number, move.color, move.serial0, move.serial1, move.serial2, move.serial3) for move in game.moves])
+
+        query = "INSERT INTO moves (`game_id`, `notation`, `fullmove_number`, `color`, `serial0`, `serial1`, `serial2`, `serial3`) VALUES (%s)" % query
+        self.engine.execute(query)
+        self.session.expire_all()
+        self.session.commit()
+#        return game.id
+
+    def read_game(self, id, is_shallow = False):
+        game = self.session.query(Game).get(id)
+        if not is_shallow:
+            game.moves = list(self.read_moves(id))
+        return game
+
+    def read_all_games(self, is_shallow = False):
+        self.session.expire_all()
+        self.session.commit()
+        games = self.session.query(Game).all()
+        for i in range(len(games)):
+            if not is_shallow:
+                games[i].moves = list(self.read_moves(games[i].id))
+        return games
+
+    def read_games(self, event = '', site = '', date = '', white = '', black = '', board_state = None):
+        games = self.session.query(Game).filter(Game.event.like('%' + event + '%'),
+            Game.site.like('%' + site + '%'), Game.date.like('%' + date + '%'),
+            Game.white.like('%' + white + '%'), Game.black.like('%' + black + '%'), ).all()
+        for i in range(len(games)):
+            games[i].moves = list(self.read_moves(games[i].id))
+
+        result = []
+
+        if not board_state is None:
+            serial = board_state.serialize()
+            for i in range(len(games)):
+                for move in games[i].moves:
+                    if [move.serial0, move.serial1, move.serial2, move.serial3] == serial:
+                        result.append(games[i])
+                        break
+        else:
+            result = games
+
+        return result
+
+    def read_moves(self, game_id):
+        moves = self.session.query(Move).filter(Move.game_id == game_id).all()
+        for i in range(len(moves)):
+            moves[i] = MoveParser().parse(input_move=moves[i])
+        return moves
+
