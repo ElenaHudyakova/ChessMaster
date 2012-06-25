@@ -14,7 +14,7 @@ class StorageTestCase(unittest.TestCase):
     def test_save_empty_game(self):
         storage = Storage()
         game = Game()
-        storage.save_game(game)
+        storage.save_game_ORM(game)
         id = game.id
         game1 = storage.read_game(id)
         self.assertEqual(game1, game)
@@ -25,7 +25,7 @@ class StorageTestCase(unittest.TestCase):
         chess_file = ChessFile(filename)
         game = chess_file.next()
         game.simulate()
-        storage.save_game(game)
+        storage.save_game_ORM(game)
         id = game.id
         game1 = storage.read_game(id)
         self.assertEqual(game1.moves[0].serial0, game.moves[0].serial0)
@@ -35,7 +35,7 @@ class StorageTestCase(unittest.TestCase):
         storage = Storage()
         game_number1 = len(storage.read_all_games())
         game = Game()
-        id = storage.save_game(game)
+        storage.save_game_ORM(game)
         game_number2 = len(storage.read_all_games())
         self.assertEqual(game_number1 + 1, game_number2)
 

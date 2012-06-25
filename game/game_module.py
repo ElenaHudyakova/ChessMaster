@@ -22,6 +22,14 @@ class Game(Base):
     def __init__(self):
         self.moves = []
         self.board_states = []
+        self.event = ''
+        self.date = ''
+        self.site = ''
+        self.result = ''
+        self.white = ''
+        self.black = ''
+        self.round = ''
+
 
     def simulate(self):
         initial_setup = BoardState()

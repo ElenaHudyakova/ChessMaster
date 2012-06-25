@@ -15,7 +15,7 @@ class MoveParser(object):
         is_castling = self._parse_castling_move(move)
         if not is_castling:
             try:
-                m = re.match(r"^(?P<piece>[BRKQN]?)(?P<from_file>[a-h]?)(?P<from_rank>[1-8]?)(?P<is_capture>x?)(?P<to_file>[a-h])(?P<to_rank>[1-8])((?P<is_promotion>=)(?P<promotion_piece_type>[BRKQN]))?(?P<is_check>\+?)?(?P<is_checkmate>#?)$", move.notation)
+                m = re.match(r"^(?P<piece>[BRKQN]?)(?P<from_file>[a-h]?)(?P<from_rank>[1-8]?)(?P<is_capture>x?)(?P<to_file>[a-h])(?P<to_rank>[1-8])((?P<is_promotion>=?)(?P<promotion_piece_type>[BRKQN]))?(?P<is_check>\+?)?(?P<is_checkmate>#?)$", move.notation)
                 move.piece_type = self._get_piece_type(m.group("piece"))
                 move.to_square = Square(m.group("to_file"), int(m.group("to_rank")))
                 try:

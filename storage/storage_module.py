@@ -76,7 +76,7 @@ class Storage(StorageBase):
 
     def __init__(self, host = 'localhost', port = '3306', login = 'root', password = '123', db_name = 'chess'):
 #        engine = create_engine('mysql+mysqldb://root:123@localhost:3306/chess', echo=True)
-        self.engine = create_engine('mysql+mysqldb://%s:%s@%s:%s/%s' % (login, password, host, port, db_name), echo=True)
+        self.engine = create_engine('mysql+mysqldb://%s:%s@%s:%s/%s' % (login, password, host, port, db_name), echo=False)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
         self.connection = MySQLdb.connect(host, login, password, db_name)
@@ -108,6 +108,7 @@ class Storage(StorageBase):
         query = query.replace("'", "\'")
         cursor.execute(query)
         self.connection.commit()
+        self.session.commit()
 
 
     def save_game_ORM(self, game):
